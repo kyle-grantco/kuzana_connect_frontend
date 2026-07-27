@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
+/*
+  Kuzana Connect brand theme (Tailwind v4).
+  Defining colors under @theme makes Tailwind auto-generate utilities:
+  bg-brand-blue, text-brand-navy, bg-brand-yellow-50, border-brand-red, etc.
+  No tailwind.config.js needed for these.
+*/
+@theme {
+  /* Primary CTAs, links (white text on blue) */
+  --color-brand-blue: #4a6290;
+  --color-brand-blue-50: #edeff4;
+  --color-brand-blue-100: #dce1eb;
+  --color-brand-blue-600: #41557d;
+  --color-brand-blue-700: #374869;
+  --color-brand-blue-900: #253045;
+
+  /* Logo tile, highlights, active chips (dark navy text on yellow) */
+  --color-brand-yellow: #fdc469;
+  --color-brand-yellow-50: #fff8ee;
+  --color-brand-yellow-100: #fff2de;
+  --color-brand-yellow-600: #e0a94f;
+  --color-brand-yellow-700: #b18b4f;
+
+  /* Dark text (esp. on yellow) */
+  --color-brand-navy: #253045;
+
+  /* Destructive / error only */
+  --color-brand-red: #fe7272;
+  --color-brand-red-600: #e85f5f;
+
+  /* Body ink */
+  --color-brand-ink: #1f2430;
+}
+
+/*
+  Plain CSS vars kept too, for inline style={{ color: "var(--brand-blue)" }}
+  usage and any non-Tailwind spots.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-yellow: #fdc469;
+  --brand-blue: #4a6290;
+  --brand-blue-600: #41557d;
+  --brand-navy: #253045;
+  --brand-red: #fe7272;
+  --brand-ink: #1f2430;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  padding: 0;
+  margin: 0;
+  color: var(--brand-ink);
 }
