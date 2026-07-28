@@ -98,7 +98,7 @@ export default function OnboardingPage() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
-    if (!form.contact_whatsapp && !form.contact_email && !form.contact_socials)
+    if (!form.contact_whatsapp && !form.contact_email)
       return "Choose at least one way for members to reach you.";
     return "";
   }
@@ -122,7 +122,6 @@ export default function OnboardingPage() {
         looking_for: form.looking_for,
         contact_whatsapp: form.contact_whatsapp,
         contact_email: form.contact_email,
-        contact_socials: form.contact_socials,
       });
       setProfileStatus({ isSearchable: true, completionStatus: "mvp" });
       if (exit) {
@@ -258,7 +257,6 @@ export default function OnboardingPage() {
               {[
                 ["contact_whatsapp", "WhatsApp"],
                 ["contact_email", "Email"],
-                ["contact_socials", "Links / socials"],
               ].map(([key, label]) => {
                 const on = !!form[key];
                 return (

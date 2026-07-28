@@ -46,8 +46,7 @@ export default function EditProfilePage() {
           primary_link: p.primary_link || "",
           links: p.links || {},
           contact_whatsapp: p.contact_whatsapp ?? true,
-          contact_email: p.contact_email ?? false,
-          contact_socials: p.contact_socials ?? false,
+          contact_email: p.contact_email ?? true,
         });
       })
       .catch(() => setError("Couldn't load your profile."));
@@ -75,7 +74,7 @@ export default function EditProfilePage() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
-    if (!form.contact_whatsapp && !form.contact_email && !form.contact_socials)
+    if (!form.contact_whatsapp && !form.contact_email)
       return "Choose at least one way for members to reach you.";
     return "";
   }
@@ -110,7 +109,6 @@ export default function EditProfilePage() {
             : null,
         contact_whatsapp: form.contact_whatsapp,
         contact_email: form.contact_email,
-        contact_socials: form.contact_socials,
       });
       notify("Profile updated.", "success", 3000);
       if (memberNo) router.replace(`/members/${slugify(name)}-${memberNo}`);
@@ -242,7 +240,6 @@ export default function EditProfilePage() {
               {[
                 ["contact_whatsapp", "WhatsApp"],
                 ["contact_email", "Email"],
-                ["contact_socials", "Links / socials"],
               ].map(([key, label]) => {
                 const on = !!form[key];
                 return (

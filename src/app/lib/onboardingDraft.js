@@ -13,7 +13,6 @@ const EMPTY = {
   looking_for: [],
   contact_whatsapp: true,
   contact_email: true,
-  contact_socials: true,
   photo_url: "",
   primary_link: "",
   links: {},
