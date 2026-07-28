@@ -7,6 +7,7 @@ import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
 import ChipInput from "@/app/components/ui/ChipInput";
 import ProgressBar from "@/app/components/ui/ProgressBar";
+import IndustryChips from "@/app/components/ui/IndustryChips";
 import {
   getIndustries,
   saveMvpProfile,
@@ -16,6 +17,7 @@ import {
 import { slugify } from "@/app/lib/slug";
 import { loadDraft, saveDraft, clearDraft } from "@/app/lib/onboardingDraft";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import { useProfileStatus } from "@/app/store/profileStatusStore";
 
 // Card shell matching the auth/welcome screens (accent bar, border, shadow),
 // but wider and left-aligned since this is a form.
@@ -47,6 +49,7 @@ function FieldLabel({ children, hint }) {
 export default function OnboardingPage() {
   const router = useRouter();
   const { notify } = useNotificationStore();
+  const setProfileStatus = useProfileStatus((s) => s.setStatus);
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(loadDraft());
@@ -95,6 +98,8 @@ export default function OnboardingPage() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
+    if (!form.contact_whatsapp && !form.contact_email && !form.contact_socials)
+      return "Choose at least one way for members to reach you.";
     return "";
   }
 
@@ -115,7 +120,11 @@ export default function OnboardingPage() {
         industry_ids: form.industry_ids,
         offerings: form.offerings,
         looking_for: form.looking_for,
+        contact_whatsapp: form.contact_whatsapp,
+        contact_email: form.contact_email,
+        contact_socials: form.contact_socials,
       });
+      setProfileStatus({ isSearchable: true, completionStatus: "mvp" });
       if (exit) {
         clearDraft();
         notify("Profile saved.", "success", 3000);
@@ -141,6 +150,7 @@ export default function OnboardingPage() {
         primary_link: form.primary_link || null,
         links: form.links && Object.keys(form.links).length ? form.links : null,
       });
+      setProfileStatus({ isSearchable: true, completionStatus: "done" });
       clearDraft();
       notify("Profile complete!", "success", 3000);
       await goToMyProfile();
@@ -163,9 +173,6 @@ export default function OnboardingPage() {
             <h1 className="text-lg font-semibold text-brand-navy">
               Let&apos;s get to know you
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              This is how other members will find you.
-            </p>
           </div>
 
           <Input
@@ -193,31 +200,16 @@ export default function OnboardingPage() {
             {industries.length === 0 ? (
               <p className="text-xs text-slate-400">Loading industries…</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {industries.map((ind) => {
-                  const on = form.industry_ids.includes(ind.id);
-                  return (
-                    <button
-                      key={ind.id}
-                      type="button"
-                      onClick={() => toggleIndustry(ind.id)}
-                      className={
-                        "rounded-full border px-3 py-1.5 text-xs transition-colors " +
-                        (on
-                          ? "border-brand-yellow bg-brand-yellow text-brand-navy font-medium"
-                          : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300")
-                      }
-                    >
-                      {ind.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <IndustryChips
+                industries={industries}
+                selected={form.industry_ids}
+                onToggle={toggleIndustry}
+              />
             )}
           </div>
 
           <div>
-            <FieldLabel hint="The products or services you provide. e.g. bookkeeping, bulk maize supply, logo design">
+            <FieldLabel hint="What you provide. e.g. accounting, bulk grain supply, web design">
               What do you offer?
             </FieldLabel>
             <ChipInput
@@ -228,7 +220,7 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="Help, services or connections you need. e.g. a supplier, an accountant, new clients">
+            <FieldLabel hint="What you need. e.g. suppliers, investors, new clients">
               What are you looking for?
             </FieldLabel>
             <ChipInput
@@ -248,6 +240,36 @@ export default function OnboardingPage() {
               placeholder="A sentence about you or your business"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
+          </div>
+
+          <div>
+            <FieldLabel hint="You can change this anytime.">
+              How can members reach you?
+            </FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["contact_whatsapp", "WhatsApp"],
+                ["contact_email", "Email"],
+                ["contact_socials", "Links / socials"],
+              ].map(([key, label]) => {
+                const on = !!form[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => set(key, !on)}
+                    className={
+                      "rounded-full border px-3 py-1.5 text-xs transition-colors " +
+                      (on
+                        ? "border-brand-yellow bg-brand-yellow-100 text-brand-navy font-medium"
+                        : "border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300")
+                    }
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {error && <p className="text-xs text-brand-red">{error}</p>}

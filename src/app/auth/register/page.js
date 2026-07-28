@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AuthShell from "@/app/components/auth/AuthShell";
 import AuthTabs from "@/app/components/auth/AuthTabs";
 import Input from "@/app/components/ui/Input";
+import PhoneInput from "@/app/components/ui/PhoneInput";
 import Button from "@/app/components/ui/Button";
 import { register } from "@/app/lib/authService";
 import { setPending } from "@/app/lib/pendingVerification";
@@ -18,6 +19,9 @@ export default function RegisterPage() {
     whatsapp_number: "",
     email: "",
   });
+  const [country, setCountry] = useState("KE");
+  const [localPhone, setLocalPhone] = useState("");
+  const [phoneValid, setPhoneValid] = useState(false);
   const [step, setStep] = useState("form"); // "form" | "confirm"
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,12 +33,14 @@ export default function RegisterPage() {
   function handleCreate(e) {
     e.preventDefault();
     setError("");
-    if (
-      !form.full_name.trim() ||
-      !form.whatsapp_number.trim() ||
-      !form.email.trim()
-    ) {
+    if (!form.full_name.trim() || !form.email.trim() || !localPhone.trim()) {
       setError("Please fill in all fields.");
+      return;
+    }
+    if (!phoneValid || !form.whatsapp_number) {
+      setError(
+        "Please enter a valid WhatsApp number for the selected country.",
+      );
       return;
     }
     setStep("confirm");
@@ -76,16 +82,18 @@ export default function RegisterPage() {
               label="Full name"
               value={form.full_name}
               onChange={update("full_name")}
-              placeholder="Abraham Mwangi"
+              placeholder="John Doe"
               autoFocus
             />
-            <Input
-              label="WhatsApp number"
-              type="tel"
-              inputMode="tel"
-              value={form.whatsapp_number}
-              onChange={update("whatsapp_number")}
-              placeholder="+254 712 345 678"
+            <PhoneInput
+              country={country}
+              onCountryChange={setCountry}
+              value={localPhone}
+              onChange={(local, e164, valid) => {
+                setLocalPhone(local);
+                setPhoneValid(valid);
+                setForm((f) => ({ ...f, whatsapp_number: e164 || "" }));
+              }}
             />
             <Input
               label="Email"

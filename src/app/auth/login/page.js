@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AuthShell from "@/app/components/auth/AuthShell";
 import AuthTabs from "@/app/components/auth/AuthTabs";
 import Input from "@/app/components/ui/Input";
+import PhoneInput from "@/app/components/ui/PhoneInput";
 import Button from "@/app/components/ui/Button";
 import { sendOtp } from "@/app/lib/authService";
 import { setPending } from "@/app/lib/pendingVerification";
@@ -13,15 +14,20 @@ import { useNotificationStore } from "@/app/store/notificationStore";
 export default function LoginPage() {
   const router = useRouter();
   const { notify } = useNotificationStore();
-  const [number, setNumber] = useState("");
+  const [country, setCountry] = useState("KE");
+  const [localPhone, setLocalPhone] = useState("");
+  const [number, setNumber] = useState(""); // stored E.164
+  const [phoneValid, setPhoneValid] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    if (!number.trim()) {
-      setError("Please enter your WhatsApp number.");
+    if (!phoneValid || !number) {
+      setError(
+        "Please enter a valid WhatsApp number for the selected country.",
+      );
       return;
     }
     setLoading(true);
@@ -45,13 +51,15 @@ export default function LoginPage() {
     <AuthShell title="Welcome back" subtitle="Log in with your WhatsApp number">
       <AuthTabs active="login" />
       <form onSubmit={handleSubmit} className="space-y-3">
-        <Input
-          label="WhatsApp number"
-          type="tel"
-          inputMode="tel"
-          value={number}
-          onChange={(e) => setNumber(e.target.value)}
-          placeholder="+254 712 345 678"
+        <PhoneInput
+          country={country}
+          onCountryChange={setCountry}
+          value={localPhone}
+          onChange={(local, e164, valid) => {
+            setLocalPhone(local);
+            setPhoneValid(valid);
+            setNumber(e164 || "");
+          }}
           autoFocus
         />
 

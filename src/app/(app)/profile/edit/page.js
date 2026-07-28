@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
 import ChipInput from "@/app/components/ui/ChipInput";
+import IndustryChips from "@/app/components/ui/IndustryChips";
 import {
   getMyProfile,
   getIndustries,
@@ -44,6 +45,9 @@ export default function EditProfilePage() {
           photo_url: p.photo_url || "",
           primary_link: p.primary_link || "",
           links: p.links || {},
+          contact_whatsapp: p.contact_whatsapp ?? true,
+          contact_email: p.contact_email ?? false,
+          contact_socials: p.contact_socials ?? false,
         });
       })
       .catch(() => setError("Couldn't load your profile."));
@@ -71,6 +75,8 @@ export default function EditProfilePage() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
+    if (!form.contact_whatsapp && !form.contact_email && !form.contact_socials)
+      return "Choose at least one way for members to reach you.";
     return "";
   }
 
@@ -94,6 +100,9 @@ export default function EditProfilePage() {
         photo_url: form.photo_url || null,
         primary_link: form.primary_link || null,
         links: form.links && Object.keys(form.links).length ? form.links : null,
+        contact_whatsapp: form.contact_whatsapp,
+        contact_email: form.contact_email,
+        contact_socials: form.contact_socials,
       });
       notify("Profile updated.", "success", 3000);
       if (memberNo) router.replace(`/members/${slugify(name)}-${memberNo}`);
@@ -145,26 +154,11 @@ export default function EditProfilePage() {
             <span className="mb-1.5 block text-xs font-medium text-slate-600">
               Industry
             </span>
-            <div className="flex flex-wrap gap-2">
-              {industries.map((ind) => {
-                const on = form.industry_ids.includes(ind.id);
-                return (
-                  <button
-                    key={ind.id}
-                    type="button"
-                    onClick={() => toggleIndustry(ind.id)}
-                    className={
-                      "rounded-full border px-3 py-1.5 text-xs " +
-                      (on
-                        ? "border-brand-yellow bg-brand-yellow text-brand-navy font-medium"
-                        : "border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300")
-                    }
-                  >
-                    {ind.label}
-                  </button>
-                );
-              })}
-            </div>
+            <IndustryChips
+              industries={industries}
+              selected={form.industry_ids}
+              onToggle={toggleIndustry}
+            />
           </div>
 
           <div>
@@ -231,6 +225,36 @@ export default function EditProfilePage() {
             }
             placeholder="Your LinkedIn profile link"
           />
+
+          <div>
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">
+              How can members reach you?
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["contact_whatsapp", "WhatsApp"],
+                ["contact_email", "Email"],
+                ["contact_socials", "Links / socials"],
+              ].map(([key, label]) => {
+                const on = !!form[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => set(key, !on)}
+                    className={
+                      "rounded-full border px-3 py-1.5 text-xs transition-colors " +
+                      (on
+                        ? "border-brand-yellow bg-brand-yellow-100 text-brand-navy font-medium"
+                        : "border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300")
+                    }
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {error && <p className="text-xs text-brand-red">{error}</p>}
 

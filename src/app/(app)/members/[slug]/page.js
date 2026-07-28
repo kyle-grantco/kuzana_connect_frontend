@@ -9,6 +9,7 @@ import {
   MapPin,
   Pencil,
   Trash2,
+  Mail,
 } from "lucide-react";
 import Button from "@/app/components/ui/Button";
 import {
@@ -18,12 +19,16 @@ import {
 } from "@/app/lib/profileService";
 import { logout } from "@/app/lib/logout";
 import { memberNumberFromSlug } from "@/app/lib/slug";
+import { useProfileStatus } from "@/app/store/profileStatusStore";
+import LockedTeaser from "@/app/components/app/LockedTeaser";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 export default function MemberProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { notify } = useNotificationStore();
+  const isSearchable = useProfileStatus((s) => s.isSearchable);
+  const myMemberNumber = useProfileStatus((s) => s.memberNumber);
   const [member, setMember] = useState(undefined);
   const [isMe, setIsMe] = useState(false);
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
@@ -77,6 +82,14 @@ export default function MemberProfilePage() {
     );
   }
 
+  // Viewer must have completed their own MVP profile to view other members.
+  // (Own profile is always viewable.)
+  const viewingNum = memberNumberFromSlug(slug || "");
+  const isOwn = myMemberNumber != null && viewingNum === myMemberNumber;
+  if (!isSearchable && !isOwn) {
+    return <LockedTeaser variant="block" />;
+  }
+
   const waLink = member.whatsapp_number
     ? `https://wa.me/${member.whatsapp_number.replace(/[^\d]/g, "")}`
     : null;
@@ -85,7 +98,7 @@ export default function MemberProfilePage() {
     <>
       <div className="mb-4 flex items-center justify-between">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/")}
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
         >
           <ArrowLeft size={14} /> Back to members
@@ -139,6 +152,15 @@ export default function MemberProfilePage() {
               </a>
             )}
 
+            {member.email && (
+              <a
+                href={`mailto:${member.email}`}
+                className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm text-brand-blue hover:border-slate-300"
+              >
+                <Mail size={14} /> {member.email}
+              </a>
+            )}
+
             {waLink && (
               <a
                 href={waLink}
@@ -152,6 +174,12 @@ export default function MemberProfilePage() {
                   </span>
                 </Button>
               </a>
+            )}
+
+            {!waLink && !member.email && !member.primary_link && (
+              <p className="mt-4 text-xs text-slate-400">
+                This member hasn&apos;t shared a contact channel.
+              </p>
             )}
 
             <p className="mt-4 text-[11px] text-slate-400">

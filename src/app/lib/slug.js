@@ -1,4 +1,4 @@
-// Turn a display name into a URL slug: "Abraham Mwangi" -> "abraham-mwangi".
+// Turn a display name into a URL slug: "John Doe" -> "abraham-mwangi".
 // The profile URL is `{slug}-{member_number}`; lookup uses the number, the slug
 // is cosmetic/shareable.
 export function slugify(name = "") {
