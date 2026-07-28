@@ -1,4 +1,4 @@
-// Turn a display name into a URL slug: "John Doe" -> "abraham-mwangi".
+// Turn a display name into a URL slug: "Abraham Mwangi" -> "abraham-mwangi".
 // The profile URL is `{slug}-{member_number}`; lookup uses the number, the slug
 // is cosmetic/shareable.
 export function slugify(name = "") {
@@ -14,4 +14,12 @@ export function slugify(name = "") {
 export function memberNumberFromSlug(slug = "") {
   const m = slug.match(/-(\d+)$/) || slug.match(/^(\d+)$/);
   return m ? parseInt(m[1], 10) : null;
+}
+
+// Ensure a user-entered URL is absolute (prepend https:// if no protocol),
+// so it isn't treated as relative to our own site. Empty stays empty.
+export function ensureUrl(url = "") {
+  const u = (url || "").trim();
+  if (!u) return u;
+  return /^https?:\/\//i.test(u) ? u : `https://${u}`;
 }

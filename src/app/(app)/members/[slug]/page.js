@@ -98,7 +98,7 @@ export default function MemberProfilePage() {
     <>
       <div className="mb-4 flex items-center justify-between">
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.back()}
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
         >
           <ArrowLeft size={14} /> Back to members
@@ -143,7 +143,7 @@ export default function MemberProfilePage() {
 
             {member.primary_link && (
               <a
-                href={member.primary_link}
+                href={ensureUrl(member.primary_link)}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm text-brand-blue hover:border-slate-300"
@@ -272,4 +272,11 @@ function initials(name = "") {
 }
 function prettyLink(url = "") {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+// Members may enter a bare domain (example.com); without a protocol the browser
+// treats it as relative and appends it to our own URL. Force an absolute URL.
+function ensureUrl(url = "") {
+  const u = url.trim();
+  if (!u) return u;
+  return /^https?:\/\//i.test(u) ? u : `https://${u}`;
 }

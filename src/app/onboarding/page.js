@@ -14,7 +14,7 @@ import {
   saveEnrichment,
   getMyProfile,
 } from "@/app/lib/profileService";
-import { slugify } from "@/app/lib/slug";
+import { slugify, ensureUrl } from "@/app/lib/slug";
 import { loadDraft, saveDraft, clearDraft } from "@/app/lib/onboardingDraft";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
@@ -147,8 +147,16 @@ export default function OnboardingPage() {
     try {
       await saveEnrichment({
         photo_url: form.photo_url || null,
-        primary_link: form.primary_link || null,
-        links: form.links && Object.keys(form.links).length ? form.links : null,
+        primary_link: form.primary_link ? ensureUrl(form.primary_link) : null,
+        links:
+          form.links && Object.keys(form.links).length
+            ? {
+                ...form.links,
+                ...(form.links.linkedin
+                  ? { linkedin: ensureUrl(form.links.linkedin) }
+                  : {}),
+              }
+            : null,
       });
       setProfileStatus({ isSearchable: true, completionStatus: "done" });
       clearDraft();

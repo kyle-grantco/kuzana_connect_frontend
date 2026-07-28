@@ -12,7 +12,7 @@ import {
   getIndustries,
   updateProfile,
 } from "@/app/lib/profileService";
-import { slugify } from "@/app/lib/slug";
+import { slugify, ensureUrl } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 export default function EditProfilePage() {
@@ -98,8 +98,16 @@ export default function EditProfilePage() {
         offerings: form.offerings,
         looking_for: form.looking_for,
         photo_url: form.photo_url || null,
-        primary_link: form.primary_link || null,
-        links: form.links && Object.keys(form.links).length ? form.links : null,
+        primary_link: form.primary_link ? ensureUrl(form.primary_link) : null,
+        links:
+          form.links && Object.keys(form.links).length
+            ? {
+                ...form.links,
+                ...(form.links.linkedin
+                  ? { linkedin: ensureUrl(form.links.linkedin) }
+                  : {}),
+              }
+            : null,
         contact_whatsapp: form.contact_whatsapp,
         contact_email: form.contact_email,
         contact_socials: form.contact_socials,
