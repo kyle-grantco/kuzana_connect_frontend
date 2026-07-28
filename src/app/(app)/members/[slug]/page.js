@@ -98,7 +98,7 @@ export default function MemberProfilePage() {
     <>
       <div className="mb-4 flex items-center justify-between">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/")}
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
         >
           <ArrowLeft size={14} /> Back to members
