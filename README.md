@@ -1,21 +1,23 @@
 # Kuzana Connect — Frontend
 
 Next.js (App Router) client for Kuzana Connect. Members register/log in with a
-WhatsApp OTP, complete a profile, then search and view other members and contact
-them over WhatsApp.
+WhatsApp OTP, build a profile, then search, view, and contact other members.
 
-Next.js + React + Tailwind (v4) + Zustand + axios + lucide-react.
+**Live:** `https://connect.kuzana.co` (Vercel). Backend: `https://api.kuzana.co`.
+
+Next.js + React + Tailwind v4 + Zustand + axios + lucide-react + libphonenumber-js.
 
 ---
 
 ## Stack & conventions
-- **Next.js App Router**, JavaScript (not TS).
-- **Tailwind v4** — theme defined in `globals.css` via `@theme` (brand colors as
-  `brand-blue`, `brand-yellow`, `brand-navy`, `brand-red`, `brand-ink`, with
-  shades). No `tailwind.config.js` colors.
-- **Zustand** — `authStore` (csrfToken, role, memberNumber), `notificationStore`.
+- **Next.js App Router**, JavaScript.
+- **Tailwind v4** — brand tokens in `globals.css` via `@theme` (`brand-blue`,
+  `brand-yellow`, `brand-navy`, `brand-red`, `brand-ink`, shades). No
+  `tailwind.config.js` colors.
+- **Zustand** — `authStore` (csrfToken, role, memberNumber),
+  `profileStatusStore` (completion state for gating), `notificationStore`.
 - **axios** — `authRequest` (CSRF header + refresh-on-401) and `publicRequest`.
-- **lucide-react** — icons.
+- **libphonenumber-js** — country-code phone input + E.164 normalization.
 
 ---
 
@@ -23,123 +25,128 @@ Next.js + React + Tailwind (v4) + Zustand + axios + lucide-react.
 
 ```
 src/app/
-├── layout.js                       # root layout (public shell, Toaster mounted)
-├── globals.css                     # Tailwind v4 import + @theme brand tokens
+├── layout.js                       # root layout (Toaster mounted)
+├── globals.css                     # Tailwind v4 + @theme brand tokens
 │
-├── auth/                           # PUBLIC (no auth guard)
+├── auth/                           # PUBLIC (no guard)
 │   ├── login/page.js
 │   ├── register/page.js            # form + confirm-number step
-│   └── verify/page.js              # OTP entry, resend, remember-device
-├── welcome/page.js                 # post-verify: shows "Member #N"
+│   └── verify/page.js
+├── welcome/page.js                 # post-verify: "Member #N"
 ├── onboarding/page.js              # 2-step profile setup
-├── profile/edit/page.js            # edit own profile
 │
 ├── (app)/                          # GUARDED group — parentheses = NOT in URL
-│   ├── layout.js                   # auth guard + AppShell wrapper
+│   ├── layout.js                   # auth guard + profile-status load + AppShell
 │   ├── page.js                     # directory (URL "/")
-│   └── members/[slug]/page.js      # member profile view ([slug] = dynamic)
+│   ├── members/[slug]/page.js      # member profile ([slug] = dynamic, NOT (slug))
+│   └── profile/edit/page.js        # edit own profile
 │
-├── store/
-│   ├── authStore.js
-│   └── notificationStore.js
-├── lib/
-│   ├── api.js                      # axios instances + interceptors
-│   ├── authService.js              # register / sendOtp / verifyOtp
-│   ├── profileService.js           # profile + industries + search calls
-│   ├── logout.js
-│   ├── onboardingDraft.js          # localStorage draft persistence
-│   ├── pendingVerification.js      # sessionStorage OTP-flow state
-│   └── slug.js                     # name <-> url slug + member-number parse
+├── store/  { authStore, profileStatusStore, notificationStore }
+├── lib/    { api, authService, profileService, logout, onboardingDraft,
+│             pendingVerification, slug }
 └── components/
-    ├── app/AppShell.jsx            # top bar + account menu (guarded pages)
-    ├── auth/{AuthShell,AuthTabs}.jsx
-    └── ui/{Button,Input,Logo,ChipInput,ProgressBar,Toaster}.jsx
+    ├── app/   { AppShell, LockedTeaser }
+    ├── auth/  { AuthShell, AuthTabs }
+    └── ui/    { Button, Input, Logo, ChipInput, IndustryChips, PhoneInput,
+                 PhotoUpload, ProgressBar, Toaster }
 ```
 
-### Route grouping (important)
-`(app)` is a **route group** — parentheses mean it does NOT appear in the URL.
-So `(app)/page.js` serves at `/` and `(app)/members/[slug]/page.js` at
-`/members/...`. The guard + shell live in `(app)/layout.js` and protect
-everything inside. Public pages (`auth/*`, `welcome`, `onboarding`) sit OUTSIDE
-the group and are unguarded. `[slug]` (square brackets) is the dynamic segment —
-NOT `(slug)`.
+**Route groups:** `(app)` with parentheses does NOT appear in the URL, so
+`(app)/page.js` serves at `/`. The guard + shell live in `(app)/layout.js`;
+public pages (auth, welcome, onboarding) sit outside it. `[slug]` (square
+brackets) is the dynamic segment — using `(slug)` breaks the route (404).
 
 ---
 
 ## Running locally
 
 ```bash
-npm install                          # next, react, axios, zustand, lucide-react, tailwindcss@4, @tailwindcss/postcss
-cp .env.local.example .env.local     # set NEXT_PUBLIC_API_URL
-npm run dev
+npm install
+# .env.local:
+#   NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+npm run dev            # localhost:3000
 ```
 
-`.env.local`:
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-```
+`NEXT_PUBLIC_API_URL` is read in `lib/api.js` with a localhost fallback. Must
+have the `NEXT_PUBLIC_` prefix (Next only exposes those to the browser). Prod
+value (Vercel env): `https://api.kuzana.co/api/v1`.
 
 Auth uses HttpOnly cookies, so the backend CORS must allow this origin with
-`allow_credentials=True` (explicit origin, not `*`). In dev, a Next rewrite proxy
-to make frontend + backend same-origin avoids cross-port cookie issues.
+`allow_credentials=True`, and (cross-origin) prod cookies are `SameSite=None; Secure`.
 
 ---
 
-## Auth & routing flow
+## Flow
 
-1. **Register** (`/auth/register`): name → WhatsApp → email, then a confirm-number
-   step (no account is created until the number is confirmed — this prevents
-   wrong-number/takeover edge cases). On confirm, `POST /auth/register` creates
-   the account + sends the OTP; routes to `/auth/verify`.
-2. **Login** (`/auth/login`): WhatsApp number → `POST /auth/send_otp` → `/auth/verify`.
-3. **Verify** (`/auth/verify`): reads the pending flow from sessionStorage (so it
-   survives leaving to WhatsApp / refresh), verifies, stores `csrf_token` + `role`
-   + `member_number` in `authStore`. Routes:
-   - new member (no profile) → `/welcome`
-   - returning member → `/` (directory)
-   Register-flow hides "use a different number" (already confirmed); login shows it.
-4. **Welcome** (`/welcome`): shows "Member #N", one CTA → `/onboarding`.
-5. **Onboarding** (`/onboarding`): 2 steps with a progress bar (40% → 80%),
-   localStorage draft (survives bounce/refresh, cleared on completion),
-   "Save & exit" after step 1. On finish → redirects to the member's own profile.
+1. **Register** (`/auth/register`): name → WhatsApp (PhoneInput: searchable
+   country dropdown, default KE, E.164) → email, then a **confirm-number** step
+   (no account created until confirmed — closes wrong-number/takeover). On
+   confirm → `POST /auth/register` + OTP → `/auth/verify`.
+2. **Login** (`/auth/login`): PhoneInput number → `send_otp` → `/auth/verify`.
+3. **Verify**: reads pending flow from sessionStorage, verifies, stores csrf +
+   role + member_number. New member → `/welcome`; returning → `/`.
+4. **Welcome**: "Member #N", CTA → `/onboarding`.
+5. **Onboarding** (2 steps, progress 40%→80%, localStorage draft): step 1 =
+   title, business (opt), location, industry (IndustryChips: common first +
+   show-more), offerings + looking-for (ChipInput), intro (opt), and **contact
+   toggles** (WhatsApp + Email, both default on; links always public). Step 2 =
+   photo (PhotoUpload → S3), primary link, LinkedIn. "Save & exit" after step 1.
+   On finish → member's own profile.
 6. **Directory** (`/`, guarded): direction toggle (find-what-I-need /
-   find-who-needs-me), search box, collapsed industry + location filters, member
-   grid. Tap a card → profile.
-7. **Member profile** (`/members/{slug}-{number}`, guarded): identity, contact
-   (WhatsApp), offers/looking-for, member number. If it's the viewer's own
-   profile: Edit button (→ `/profile/edit`) and a Delete-account option at the
-   bottom.
+   find-who-needs-me), search, collapsed industry + location filters, member
+   grid. Locked+greyed teaser if the viewer hasn't completed their MVP profile.
+7. **Member profile** (`/members/{slug}-{number}`): identity, contact (only the
+   channels the member enabled + always their links), offers/looking-for,
+   member #. Own profile adds Edit + a Delete-account action at the bottom.
+   Blocked with a teaser if the viewer's own profile is incomplete.
 
-### The guard (`(app)/layout.js`)
-On mount: `checkAuthStatus()`; on failure try `refreshSession()`; if both fail,
-clear auth and redirect to `/auth/login`. Shows a spinner while checking, then
-renders children inside `AppShell`.
+### Guard (`(app)/layout.js`)
+On every guarded load: check auth (refresh once, else → `/auth/login`), then
+load profile completion into `profileStatusStore`. Pages read it to lock
+themselves when the member hasn't reached `mvp`. Running on every load closes
+the URL-escape-onboarding path. Wraps children in `AppShell` (top bar + account
+menu: My profile, Log out).
+
+---
+
+## Key components
+- **PhoneInput** — country dropdown (type-to-filter, flag + dial code, KE
+  default) + number field; parses/validates via libphonenumber-js, emits E.164.
+- **PhotoUpload** — resizes to ~512px WebP client-side, gets a presigned URL,
+  PUTs directly to S3, returns the public URL. No bytes through our API.
+- **ChipInput** — add-one-at-a-time free-text chips (offerings/looking-for);
+  blocks the `|` delimiter.
+- **IndustryChips** — selectable chips, common sectors first, show-more for the
+  tail; selected-but-hidden chips stay visible.
+- **LockedTeaser** — overlay (directory) / block (other pages) for members
+  without a completed profile.
 
 ---
 
 ## State & storage
-- **authStore** (in-memory): `csrfToken`, `role`, `memberNumber`. Reset on logout.
-- **notificationStore**: `notify(message, type, duration)`; rendered by `<Toaster/>`
-  mounted in the root layout.
-- **sessionStorage** (`pendingVerification`): `{whatsapp_number, flow}` across the
-  OTP round-trip.
-- **localStorage** (`onboardingDraft`): in-progress onboarding fields.
+- **authStore** (in-memory): csrfToken, role, memberNumber.
+- **profileStatusStore**: isSearchable, completionStatus, memberNumber, fullName
+  (loaded by the guard, drives locking).
+- **notificationStore**: `notify(msg, type, duration)`; rendered by `<Toaster/>`.
+- **sessionStorage** (pendingVerification): `{whatsapp_number, flow}` across OTP.
+- **localStorage** (onboardingDraft): in-progress onboarding, cleared on finish.
 
 ---
 
-## Theming
-Brand tokens in `globals.css` under `@theme` generate Tailwind utilities:
-`bg-brand-blue`, `hover:bg-brand-blue-600`, `bg-brand-yellow-100`,
-`text-brand-navy`, `text-brand-red`, `bg-brand-blue-50`, etc. CSS vars
-(`var(--brand-blue)`) are also available for inline styles. Offer chips use the
-blue tint, looking-for uses gray, yellow is reserved for highlights/active states.
+## Deploy (Vercel)
+Repo is org-owned (`kyle-grantco`). Project on the org's Vercel; env
+`NEXT_PUBLIC_API_URL=https://api.kuzana.co/api/v1`; domain `connect.kuzana.co`
+via a CNAME to Vercel. Lint (`react-hooks/set-state-in-effect`) warns on a few
+effects but doesn't block the build.
 
 ---
 
 ## Known gaps / TODO
-- Session cookie fix (logout 401 in cross-origin dev) — pairs with the backend CORS/cookie fix.
-- WhatsApp number field should prefill/enforce country code (`+254`).
-- Photo is a URL field; real uploads (presigned S3/DO Spaces) pending.
-- Completion reminders for users who bounced mid-onboarding (blocking for
-  no-MVP, banner for mvp-not-done) not yet built.
-- AI "search smarter" fallback not yet added.
+- Admin UI (`/admin`) — pending backend RBAC.
+- Settings page — contact prefs + edits (edit page exists; formalize).
+- Search "smarter"/AI fallback — pending backend work.
+- Directory scroll preservation on back (currently `push("/")`; a `replace`-based
+  history fix is noted but not applied).
+- Lint cleanup (welcome's unnecessary effect; silence the valid fetch-effects).
+- `.js` vs `.jsx` extension standardization.
+- Work-email-separate-from-login-email (deferred).

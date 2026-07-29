@@ -2,7 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Users, ChevronDown, User, LogOut } from "lucide-react";
+import {
+  Users,
+  ChevronDown,
+  User,
+  LogOut,
+  LayoutDashboard,
+} from "lucide-react";
 import { useAuthStore } from "@/app/store/authStore";
 import { logout } from "@/app/lib/logout";
 import { getMyProfile } from "@/app/lib/profileService";
@@ -91,6 +97,18 @@ export default function AppShell({ children }) {
                 >
                   <User size={15} /> My profile
                 </button>
+                {(me?.user?.role === "admin" ||
+                  me?.user?.role === "super_admin") && (
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      router.push("/admin");
+                    }}
+                    className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    <LayoutDashboard size={15} /> Admin dashboard
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setOpen(false);
