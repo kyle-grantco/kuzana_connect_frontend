@@ -113,8 +113,8 @@ export default function AdminMembersPage() {
       ) : rows.length === 0 ? (
         <p className="py-10 text-center text-sm text-slate-400">No members.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs text-slate-500">
               <tr>
                 <th className="px-4 py-2.5">#</th>
@@ -159,13 +159,22 @@ export default function AdminMembersPage() {
                     {isSuper ? (
                       <select
                         value={u.role}
-                        onChange={(e) =>
-                          act(
-                            () => setUserRole(u.member_number, e.target.value),
-                            u.member_number,
-                            "Role updated.",
-                          )
-                        }
+                        onChange={(e) => {
+                          const newRole = e.target.value;
+                          if (
+                            confirm(
+                              `Change ${u.full_name}'s role to "${newRole}"?`,
+                            )
+                          ) {
+                            act(
+                              () => setUserRole(u.member_number, newRole),
+                              u.member_number,
+                              "Role updated.",
+                            );
+                          } else {
+                            e.target.value = u.role; // revert the select
+                          }
+                        }}
                         className="rounded border border-slate-200 bg-white px-2 py-1 text-xs"
                       >
                         <option value="user">user</option>
@@ -181,13 +190,18 @@ export default function AdminMembersPage() {
                       <div className="flex gap-2">
                         {u.status !== "suspended" && u.status !== "deleted" && (
                           <button
-                            onClick={() =>
-                              act(
-                                suspendUser,
-                                u.member_number,
-                                "User suspended.",
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  `Suspend ${u.full_name}? They won't be able to log in.`,
+                                )
                               )
-                            }
+                                act(
+                                  suspendUser,
+                                  u.member_number,
+                                  "User suspended.",
+                                );
+                            }}
                             className="rounded border border-orange-200 px-2 py-1 text-[11px] text-orange-700 hover:bg-orange-50"
                           >
                             Suspend
@@ -195,13 +209,14 @@ export default function AdminMembersPage() {
                         )}
                         {u.status !== "active" && (
                           <button
-                            onClick={() =>
-                              act(
-                                activateUser,
-                                u.member_number,
-                                "User reactivated.",
-                              )
-                            }
+                            onClick={() => {
+                              if (confirm(`Reactivate ${u.full_name}?`))
+                                act(
+                                  activateUser,
+                                  u.member_number,
+                                  "User reactivated.",
+                                );
+                            }}
                             className="rounded border border-green-200 px-2 py-1 text-[11px] text-green-700 hover:bg-green-50"
                           >
                             Activate

@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { getMetrics } from "@/app/lib/adminService";
 
-function Stat({ label, value, sub }) {
+function Stat({ label, value, sub, pct }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="text-2xl font-semibold text-brand-navy">{value}</div>
+      {pct != null && (
+        <div className="text-sm font-medium text-brand-blue">{pct}%</div>
+      )}
       <div className="mt-0.5 text-xs text-slate-500">{label}</div>
       {sub != null && (
         <div className="mt-1 text-[11px] text-slate-400">{sub}</div>
@@ -60,20 +63,30 @@ export default function AdminDashboard() {
         <h2 className="mb-3 text-sm font-semibold text-slate-500">
           Profiles / onboarding
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <Stat label="Searchable" value={p.searchable} />
-          <Stat label="MVP (searchable, not full)" value={p.mvp} />
-          <Stat label="Fully complete" value={p.done} />
-          <Stat label="Not started (pending)" value={p.pending} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat
-            label="MVP completion"
-            value={`${p.mvp_completion_rate}%`}
+            label="Fully complete"
+            value={p.done.count}
+            pct={p.done.pct}
             sub="of active accounts"
           />
           <Stat
-            label="Full completion"
-            value={`${p.full_completion_rate}%`}
+            label="MVP only"
+            value={p.mvp.count}
+            pct={p.mvp.pct}
+            sub="searchable, not full"
+          />
+          <Stat
+            label="Not completed"
+            value={p.not_completed.count}
+            pct={p.not_completed.pct}
             sub="of active accounts"
+          />
+          <Stat
+            label="Searchable"
+            value={p.searchable.count}
+            pct={p.searchable.pct}
+            sub="MVP + fully complete"
           />
         </div>
       </section>
