@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { RefreshCw } from "lucide-react";
 import { getMetrics } from "@/app/lib/adminService";
 
 function Stat({ label, value, sub, pct, soon }) {
@@ -36,12 +37,24 @@ function Stat({ label, value, sub, pct, soon }) {
 export default function AdminDashboard() {
   const [m, setM] = useState(null);
   const [err, setErr] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await getMetrics();
+      setM(data);
+      setErr("");
+    } catch {
+      setErr("Couldn't load metrics.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    getMetrics()
-      .then(setM)
-      .catch(() => setErr("Couldn't load metrics."));
-  }, []);
+    load();
+  }, [load]);
 
   if (err)
     return <p className="py-12 text-center text-sm text-brand-red">{err}</p>;
@@ -59,7 +72,17 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="mb-1 text-sm font-semibold text-slate-500">Accounts</h2>
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-500">Accounts</h2>
+          <button
+            onClick={load}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300 disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />{" "}
+            Refresh
+          </button>
+        </div>
         <p className="mb-3 text-xs text-slate-400">
           Everyone who has registered.
         </p>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, RefreshCw } from "lucide-react";
 import {
   listUsers,
   suspendUser,
@@ -71,7 +71,17 @@ export default function AdminMembersPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold text-brand-navy">Members</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-brand-navy">Members</h1>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300 disabled:opacity-50"
+        >
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />{" "}
+          Refresh
+        </button>
+      </div>
 
       {/* status tabs */}
       <div className="mb-3 flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 text-xs">
