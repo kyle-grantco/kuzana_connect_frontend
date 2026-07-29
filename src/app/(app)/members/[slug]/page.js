@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   MessageCircle,
@@ -26,6 +26,8 @@ import { useNotificationStore } from "@/app/store/notificationStore";
 export default function MemberProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromAdmin = searchParams.get("from") === "admin";
   const { notify } = useNotificationStore();
   const isSearchable = useProfileStatus((s) => s.isSearchable);
   const myMemberNumber = useProfileStatus((s) => s.memberNumber);
@@ -98,10 +100,13 @@ export default function MemberProfilePage() {
     <>
       <div className="mb-4 flex items-center justify-between">
         <button
-          onClick={() => router.push("/")}
+          onClick={() =>
+            fromAdmin ? router.push("/admin/users") : router.back()
+          }
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
         >
-          <ArrowLeft size={14} /> Back to members
+          <ArrowLeft size={14} />{" "}
+          {fromAdmin ? "Back to members list" : "Back to members"}
         </button>
         {isMe && (
           <button

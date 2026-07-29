@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Eye } from "lucide-react";
 import {
   listUsers,
   suspendUser,
@@ -12,6 +13,7 @@ import {
   getMetrics,
 } from "@/app/lib/adminService";
 import { getMyProfile } from "@/app/lib/profileService";
+import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 const STATUS_TABS = ["all", "active", "pending", "suspended", "deleted"];
@@ -25,6 +27,7 @@ const statusStyle = {
 
 export default function AdminMembersPage() {
   const { notify } = useNotificationStore();
+  const router = useRouter();
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
@@ -122,6 +125,7 @@ export default function AdminMembersPage() {
                 <th className="px-4 py-2.5">Status</th>
                 <th className="px-4 py-2.5">Profile</th>
                 <th className="px-4 py-2.5">Role</th>
+                <th className="px-4 py-2.5">View</th>
                 {isSuper && <th className="px-4 py-2.5">Actions</th>}
               </tr>
             </thead>
@@ -135,9 +139,18 @@ export default function AdminMembersPage() {
                     {u.member_number ?? "—"}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="font-medium text-brand-navy">
+                    <button
+                      onClick={() =>
+                        u.member_number &&
+                        router.push(
+                          `/members/${slugify(u.full_name)}-${u.member_number}?from=admin`,
+                        )
+                      }
+                      disabled={!u.member_number}
+                      className="text-left font-medium text-brand-navy hover:text-brand-blue disabled:hover:text-brand-navy"
+                    >
                       {u.full_name}
-                    </div>
+                    </button>
                     <div className="text-[11px] text-slate-400">
                       {u.whatsapp_number}
                     </div>
@@ -184,6 +197,20 @@ export default function AdminMembersPage() {
                     ) : (
                       <span className="text-xs text-slate-500">{u.role}</span>
                     )}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      onClick={() =>
+                        u.member_number &&
+                        router.push(
+                          `/members/${slugify(u.full_name)}-${u.member_number}?from=admin`,
+                        )
+                      }
+                      disabled={!u.member_number}
+                      className="flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-[11px] text-brand-blue hover:border-slate-300 disabled:opacity-40"
+                    >
+                      <Eye size={12} /> View
+                    </button>
                   </td>
                   {isSuper && (
                     <td className="px-4 py-2.5">

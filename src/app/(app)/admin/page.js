@@ -3,16 +3,31 @@
 import { useEffect, useState } from "react";
 import { getMetrics } from "@/app/lib/adminService";
 
-function Stat({ label, value, sub, pct }) {
+function Stat({ label, value, sub, pct, soon }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-2xl font-semibold text-brand-navy">{value}</div>
-      {pct != null && (
-        <div className="text-sm font-medium text-brand-blue">{pct}%</div>
-      )}
+    <div
+      className={
+        "rounded-xl border border-slate-200 bg-white p-4 shadow-sm " +
+        (soon ? "opacity-50" : "")
+      }
+    >
+      <div className="text-2xl font-semibold text-brand-navy">
+        {soon ? "—" : value}
+        {!soon && pct != null && (
+          <span className="ml-1.5 text-sm font-medium text-slate-400">
+            ({pct}%)
+          </span>
+        )}
+      </div>
       <div className="mt-0.5 text-xs text-slate-500">{label}</div>
-      {sub != null && (
-        <div className="mt-1 text-[11px] text-slate-400">{sub}</div>
+      {soon ? (
+        <div className="mt-1 text-[11px] italic text-slate-400">
+          coming soon
+        </div>
+      ) : (
+        sub != null && (
+          <div className="mt-1 text-[11px] text-slate-400">{sub}</div>
+        )
       )}
     </div>
   );
@@ -44,49 +59,61 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Accounts</h2>
+        <h2 className="mb-1 text-sm font-semibold text-slate-500">Accounts</h2>
+        <p className="mb-3 text-xs text-slate-400">
+          Everyone who has registered.
+        </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <Stat label="Total accounts" value={a.total} />
-          <Stat label="Active" value={a.active} />
-          <Stat label="Pending" value={a.pending} />
-          <Stat label="Suspended" value={a.suspended} />
-          <Stat label="Deleted" value={a.deleted} />
           <Stat
-            label="Verified"
-            value={a.verified}
-            sub={`${a.verification_rate}% verification rate`}
+            label="Registered"
+            value={a.total}
+            sub="all accounts ever created"
           />
+          <Stat
+            label="Active"
+            value={a.active}
+            sub="verified and in good standing"
+          />
+          <Stat
+            label="Pending"
+            value={a.pending}
+            sub="registered but never verified"
+          />
+          <Stat
+            label="Suspended"
+            value={a.suspended}
+            sub="blocked by an admin"
+          />
+          <Stat label="Deleted" value={a.deleted} sub="removed accounts" />
+          <Stat label="Logged in" soon />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">
-          Profiles / onboarding
-        </h2>
+        <h2 className="mb-1 text-sm font-semibold text-slate-500">Profiles</h2>
+        <p className="mb-3 text-xs text-slate-400">
+          Onboarding progress of active members. Percentages are of active
+          accounts.
+        </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Fully complete" value={p.done.count} pct={p.done.pct} />
           <Stat
-            label="Fully complete"
-            value={p.done.count}
-            pct={p.done.pct}
-            sub="of active accounts"
-          />
-          <Stat
-            label="MVP only"
+            label="Basic only"
             value={p.mvp.count}
             pct={p.mvp.pct}
-            sub="searchable, not full"
+            sub="core profile done, extras skipped"
           />
           <Stat
-            label="Not completed"
+            label="Not started"
             value={p.not_completed.count}
             pct={p.not_completed.pct}
-            sub="of active accounts"
+            sub="no usable profile yet"
           />
           <Stat
-            label="Searchable"
+            label="Discoverable"
             value={p.searchable.count}
             pct={p.searchable.pct}
-            sub="MVP + fully complete"
+            sub="basic + fully complete"
           />
         </div>
       </section>
@@ -95,13 +122,16 @@ export default function AdminDashboard() {
         <h2 className="mb-3 text-sm font-semibold text-slate-500">Search</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Total searches" value={s.total_searches} />
-          <Stat label="Zero-result searches" value={s.zero_result} />
+          <Stat label="No results" value={s.zero_result} />
         </div>
         {s.top_terms?.length > 0 && (
           <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 text-xs font-semibold text-slate-500">
-              Top search terms
+            <div className="mb-1 text-xs font-semibold text-slate-500">
+              Most-searched terms
             </div>
+            <p className="mb-2 text-[11px] text-slate-400">
+              How many times each exact phrase was searched.
+            </p>
             <div className="flex flex-wrap gap-2">
               {s.top_terms.map((t, i) => (
                 <span
@@ -118,9 +148,12 @@ export default function AdminDashboard() {
 
       {m.industry_distribution?.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-slate-500">
+          <h2 className="mb-1 text-sm font-semibold text-slate-500">
             Members by industry
           </h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Number of members in each industry.
+          </p>
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap gap-2">
               {m.industry_distribution
@@ -139,12 +172,23 @@ export default function AdminDashboard() {
       )}
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">
+        <h2 className="mb-1 text-sm font-semibold text-slate-500">
           Contact preferences
         </h2>
+        <p className="mb-3 text-xs text-slate-400">
+          How many members allow each contact method.
+        </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Share WhatsApp" value={m.contact_prefs.share_whatsapp} />
-          <Stat label="Share Email" value={m.contact_prefs.share_email} />
+          <Stat
+            label="Allow WhatsApp"
+            value={m.contact_prefs.share_whatsapp}
+            sub="reachable via WhatsApp"
+          />
+          <Stat
+            label="Allow Email"
+            value={m.contact_prefs.share_email}
+            sub="reachable via email"
+          />
         </div>
       </section>
     </div>
