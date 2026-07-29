@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
+import PhotoUpload from "@/app/components/ui/PhotoUpload";
 import ChipInput from "@/app/components/ui/ChipInput";
 import IndustryChips from "@/app/components/ui/IndustryChips";
 import {
@@ -211,11 +212,9 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <Input
-            label="Photo URL (optional)"
+          <PhotoUpload
             value={form.photo_url}
-            onChange={update("photo_url")}
-            placeholder="Link to a photo of you"
+            onChange={(url) => set("photo_url", url)}
           />
           <Input
             label="Primary link (optional)"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
+import PhotoUpload from "@/app/components/ui/PhotoUpload";
 import ChipInput from "@/app/components/ui/ChipInput";
 import ProgressBar from "@/app/components/ui/ProgressBar";
 import IndustryChips from "@/app/components/ui/IndustryChips";
@@ -250,7 +251,7 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="You can change this anytime.">
+            <FieldLabel hint="Choose how members can reach you directly. You can change this anytime.">
               How can members reach you?
             </FieldLabel>
             <div className="flex flex-wrap gap-2">
@@ -306,11 +307,9 @@ export default function OnboardingPage() {
             </h1>
           </div>
 
-          <Input
-            label="Photo URL (optional)"
+          <PhotoUpload
             value={form.photo_url}
-            onChange={update("photo_url")}
-            placeholder="Link to a photo of you"
+            onChange={(url) => set("photo_url", url)}
           />
           <Input
             label="Primary link (optional)"
