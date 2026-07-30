@@ -44,6 +44,7 @@ export async function searchMembers({
   direction = "offering",
   industry = [],
   location,
+  deep = false,
   page = 1,
   size = 20,
 } = {}) {
@@ -51,9 +52,10 @@ export async function searchMembers({
   if (q) params.set("q", q);
   params.set("direction", direction);
   if (location) params.set("location", location);
+  if (deep) params.set("deep", "true");
   industry.forEach((id) => params.append("industry", id));
   params.set("page", page);
   params.set("size", size);
   const res = await authRequest.get(`/search?${params.toString()}`);
-  return res.data; // { total, page, size, results }
+  return res.data; // { total, page, size, results, ai_used }
 }

@@ -21,6 +21,9 @@ export default function DirectoryPage() {
   const [openPanel, setOpenPanel] = useState(null); // "industry" | "location" | null
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [aiUsed, setAiUsed] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [deepLoading, setDeepLoading] = useState(false);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -29,22 +32,31 @@ export default function DirectoryPage() {
       .catch(() => {});
   }, []);
 
-  const run = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await searchMembers({
-        q: q.trim(),
-        direction,
-        industry: selIndustries,
-        location: location.trim(),
-      });
-      setResults(data.results || []);
-    } catch {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [q, direction, selIndustries, location]);
+  const run = useCallback(
+    async (deep = false) => {
+      if (deep) setDeepLoading(true);
+      else setLoading(true);
+      try {
+        const data = await searchMembers({
+          q: q.trim(),
+          direction,
+          industry: selIndustries,
+          location: location.trim(),
+          deep,
+        });
+        setResults(data.results || []);
+        setAiUsed(!!data.ai_used);
+        setAiEnabled(!!data.ai_enabled);
+      } catch {
+        setResults([]);
+        setAiUsed(false);
+      } finally {
+        if (deep) setDeepLoading(false);
+        else setLoading(false);
+      }
+    },
+    [q, direction, selIndustries, location],
+  );
 
   useEffect(() => {
     if (!locked) run();
@@ -140,8 +152,14 @@ export default function DirectoryPage() {
                   ? "What are you looking for? e.g. HR services, soya suppliers"
                   : "What do you offer? e.g. HR services, legal advice"
               }
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-24 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-brand-blue px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-600"
+            >
+              Search
+            </button>
           </form>
 
           {/* collapsed filter buttons */}
@@ -220,64 +238,109 @@ export default function DirectoryPage() {
         {loading ? (
           <p className="py-12 text-center text-sm text-slate-400">Searching…</p>
         ) : results.length === 0 ? (
-          <p className="py-12 text-center text-sm text-slate-400">
-            No members found. Try different terms.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((m) => (
-              <button
-                key={m.member_number}
-                onClick={() => openMember(m)}
-                className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
-              >
-                <div className="mb-3 flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-blue text-sm font-medium text-white">
-                    {m.photo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.photo_url}
-                        alt={m.full_name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      initials(m.full_name)
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-brand-navy">
-                      {m.full_name}
-                    </div>
-                    <div className="truncate text-xs text-slate-400">
-                      {[m.title, m.business_name].filter(Boolean).join(" · ")}
-                    </div>
-                  </div>
+          <div className="py-12 text-center">
+            <p className="text-sm text-slate-400">No members found.</p>
+            {q.trim() &&
+              !aiUsed &&
+              (aiEnabled ? (
+                <button
+                  onClick={() => run(true)}
+                  disabled={deepLoading}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
+                >
+                  <Search size={13} />{" "}
+                  {deepLoading ? "Searching…" : "Search deeper"}
+                </button>
+              ) : (
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-300">
+                  <Search size={13} /> Search deeper{" "}
+                  <span className="text-[10px] italic">(coming soon)</span>
                 </div>
-                {m.offerings?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {m.offerings.slice(0, 3).map((o, i) => (
-                      <span
-                        key={i}
-                        className="rounded-full bg-brand-blue-50 px-2 py-0.5 text-[11px] text-brand-blue-700"
-                      >
-                        {o}
-                      </span>
-                    ))}
-                    {m.offerings.length > 3 && (
-                      <span className="px-1 text-[11px] text-slate-400">
-                        +{m.offerings.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {m.location && (
-                  <div className="mt-3 text-[11px] text-slate-400">
-                    {m.location}
-                  </div>
-                )}
-              </button>
-            ))}
+              ))}
           </div>
+        ) : (
+          <>
+            {/* results header: count + search-deeper */}
+            {q.trim() && (
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs text-slate-400">
+                  {aiUsed
+                    ? "Showing related results"
+                    : `${results.length} result${results.length === 1 ? "" : "s"}`}
+                </p>
+                {!aiUsed &&
+                  (aiEnabled ? (
+                    <button
+                      onClick={() => run(true)}
+                      disabled={deepLoading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
+                    >
+                      <Search size={13} />{" "}
+                      {deepLoading ? "Searching…" : "Search deeper"}
+                    </button>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-300">
+                      <Search size={13} /> Search deeper{" "}
+                      <span className="text-[10px] italic">(soon)</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((m) => (
+                <button
+                  key={m.member_number}
+                  onClick={() => openMember(m)}
+                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                >
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-blue text-sm font-medium text-white">
+                      {m.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={m.photo_url}
+                          alt={m.full_name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        initials(m.full_name)
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-brand-navy">
+                        {m.full_name}
+                      </div>
+                      <div className="truncate text-xs text-slate-400">
+                        {[m.title, m.business_name].filter(Boolean).join(" · ")}
+                      </div>
+                    </div>
+                  </div>
+                  {m.offerings?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {m.offerings.slice(0, 3).map((o, i) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-brand-blue-50 px-2 py-0.5 text-[11px] text-brand-blue-700"
+                        >
+                          {o}
+                        </span>
+                      ))}
+                      {m.offerings.length > 3 && (
+                        <span className="px-1 text-[11px] text-slate-400">
+                          +{m.offerings.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {m.location && (
+                    <div className="mt-3 text-[11px] text-slate-400">
+                      {m.location}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
