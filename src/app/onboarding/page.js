@@ -58,6 +58,30 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Already-onboarded users don't belong here (onboarding is one-time). Check the
+  // BACKEND (client store is empty on a direct reload) and, if they're already
+  // set up, quietly redirect to their profile. We DON'T gate the UI on this: the
+  // common case is a new user who needs onboarding, so we render immediately for
+  // responsiveness and only redirect the rare already-onboarded visitor.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const me = await getMyProfile();
+        const status = me?.profile?.completion_status;
+        const n = me?.user?.member_number;
+        if (active && (status === "mvp" || status === "done") && n != null) {
+          router.replace(`/members/${slugify(me.user.full_name || "")}-${n}`);
+        }
+      } catch {
+        // check failed — let them proceed with onboarding
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
   useEffect(() => {
     saveDraft(form);
   }, [form]);
@@ -85,7 +109,7 @@ export default function OnboardingPage() {
       const n = me?.user?.member_number;
       const name = me?.user?.full_name || "";
       if (n) {
-        router.replace(`/members/${slugify(name)}-${n}`);
+        router.replace(`/members/${slugify(name)}-${n}?from=onboarding`);
         return;
       }
     } catch {}
@@ -184,7 +208,7 @@ export default function OnboardingPage() {
           </div>
 
           <Input
-            label="Who are you?"
+            label="Your role or title"
             value={form.title}
             onChange={update("title")}
             placeholder="e.g. Founder, HR Consultant, Investor"
@@ -217,29 +241,31 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="What you provide. e.g. accounting, bulk grain supply, web design">
+            <FieldLabel hint="Add several with the + button. e.g. accounting, bulk grain supply, web design">
               What do you offer?
             </FieldLabel>
             <ChipInput
               value={form.offerings}
               onChange={(v) => set("offerings", v)}
-              placeholder="Add an offering and press +"
+              placeholder="Type an offering, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel hint="What you need. e.g. suppliers, investors, new clients">
+            <FieldLabel hint="Add several with the + button. e.g. suppliers, investors, new clients">
               What are you looking for?
             </FieldLabel>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
-              placeholder="Add a need and press +"
+              placeholder="Type a need, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel>Short intro (optional)</FieldLabel>
+            <FieldLabel hint="Up to ~60 words.">
+              Short intro (optional)
+            </FieldLabel>
             <textarea
               value={form.intro}
               onChange={update("intro")}

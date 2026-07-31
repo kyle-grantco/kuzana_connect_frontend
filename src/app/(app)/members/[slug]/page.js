@@ -28,6 +28,19 @@ export default function MemberProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromAdmin = searchParams.get("from") === "admin";
+  const fromOnboarding = searchParams.get("from") === "onboarding";
+
+  function goBackToMembers() {
+    if (fromAdmin) {
+      router.push("/admin/users");
+      return;
+    }
+    if (fromOnboarding) {
+      router.push("/");
+      return;
+    } // no useful history after onboarding
+    router.back(); // normal browse — preserves directory scroll
+  }
   const { notify } = useNotificationStore();
   const isSearchable = useProfileStatus((s) => s.isSearchable);
   const myMemberNumber = useProfileStatus((s) => s.memberNumber);
@@ -100,9 +113,7 @@ export default function MemberProfilePage() {
     <>
       <div className="mb-4 flex items-center justify-between">
         <button
-          onClick={() =>
-            fromAdmin ? router.push("/admin/users") : router.back()
-          }
+          onClick={goBackToMembers}
           className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
         >
           <ArrowLeft size={14} />{" "}

@@ -240,23 +240,16 @@ export default function DirectoryPage() {
         ) : results.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm text-slate-400">No members found.</p>
-            {q.trim() &&
-              !aiUsed &&
-              (aiEnabled ? (
-                <button
-                  onClick={() => run(true)}
-                  disabled={deepLoading}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
-                >
-                  <Search size={13} />{" "}
-                  {deepLoading ? "Searching…" : "Search deeper"}
-                </button>
-              ) : (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-300">
-                  <Search size={13} /> Search deeper{" "}
-                  <span className="text-[10px] italic">(coming soon)</span>
-                </div>
-              ))}
+            {q.trim() && !aiUsed && aiEnabled && (
+              <button
+                onClick={() => run(true)}
+                disabled={deepLoading}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
+              >
+                <Search size={13} />{" "}
+                {deepLoading ? "Searching…" : "Search deeper"}
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -268,22 +261,16 @@ export default function DirectoryPage() {
                     ? "Showing related results"
                     : `${results.length} result${results.length === 1 ? "" : "s"}`}
                 </p>
-                {!aiUsed &&
-                  (aiEnabled ? (
-                    <button
-                      onClick={() => run(true)}
-                      disabled={deepLoading}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
-                    >
-                      <Search size={13} />{" "}
-                      {deepLoading ? "Searching…" : "Search deeper"}
-                    </button>
-                  ) : (
-                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-300">
-                      <Search size={13} /> Search deeper{" "}
-                      <span className="text-[10px] italic">(soon)</span>
-                    </div>
-                  ))}
+                {!aiUsed && aiEnabled && (
+                  <button
+                    onClick={() => run(true)}
+                    disabled={deepLoading}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
+                  >
+                    <Search size={13} />{" "}
+                    {deepLoading ? "Searching…" : "Search deeper"}
+                  </button>
+                )}
               </div>
             )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -15,7 +15,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
           <div className="p-7 sm:p-8">
             <div className="mb-6 flex flex-col items-center text-center">
               <div className="mb-3">
-                <Logo />
+                <Logo size={48} />
               </div>
               <h1 className="text-base font-semibold text-brand-navy">
                 {title}

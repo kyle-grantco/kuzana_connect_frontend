@@ -2,13 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Users,
-  ChevronDown,
-  User,
-  LogOut,
-  LayoutDashboard,
-} from "lucide-react";
+import { ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useAuthStore } from "@/app/store/authStore";
 import { logout } from "@/app/lib/logout";
 import { getMyProfile } from "@/app/lib/profileService";
@@ -57,9 +51,12 @@ export default function AppShell({ children }) {
             className="flex items-center gap-2"
             aria-label="Kuzana Connect home"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-yellow">
-              <Users size={18} strokeWidth={1.9} className="text-brand-navy" />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/kuzana-logo.png"
+              alt="Kuzana"
+              className="h-8 w-auto object-contain"
+            />
             <span className="text-sm font-semibold text-brand-navy">
               Kuzana Connect
             </span>
