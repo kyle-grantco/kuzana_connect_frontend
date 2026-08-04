@@ -6,6 +6,7 @@ import { Search, MapPin, Building2, X, SlidersHorizontal } from "lucide-react";
 import { searchMembers, getIndustries } from "@/app/lib/profileService";
 import { slugify } from "@/app/lib/slug";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
+import { useSearchStore } from "@/app/store/searchStore";
 import LockedTeaser from "@/app/components/app/LockedTeaser";
 import IndustryChips from "@/app/components/ui/IndustryChips";
 
@@ -13,16 +14,22 @@ export default function DirectoryPage() {
   const router = useRouter();
   const isSearchable = useProfileStatus((s) => s.isSearchable);
   const locked = !isSearchable;
-  const [q, setQ] = useState("");
-  const [direction, setDirection] = useState("offering"); // offering = I'm looking for; looking_for = find who needs what I offer
+
+  // restore prior search snapshot (survives opening a profile and coming back)
+  const saved = useSearchStore.getState();
+  const saveSearch = useSearchStore((s) => s.save);
+  const resetSearch = useSearchStore((s) => s.reset);
+
+  const [q, setQ] = useState(saved.q);
+  const [direction, setDirection] = useState(saved.direction || "offering");
   const [industries, setIndustries] = useState([]);
-  const [selIndustries, setSelIndustries] = useState([]);
-  const [location, setLocation] = useState("");
+  const [selIndustries, setSelIndustries] = useState(saved.selIndustries || []);
+  const [location, setLocation] = useState(saved.location || "");
   const [openPanel, setOpenPanel] = useState(null); // "industry" | "location" | null
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState(saved.results || []);
   const [loading, setLoading] = useState(false);
-  const [aiUsed, setAiUsed] = useState(false);
-  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiUsed, setAiUsed] = useState(saved.aiUsed || false);
+  const [aiEnabled, setAiEnabled] = useState(saved.aiEnabled || false);
   const [deepLoading, setDeepLoading] = useState(false);
   const panelRef = useRef(null);
 
@@ -44,9 +51,22 @@ export default function DirectoryPage() {
           location: location.trim(),
           deep,
         });
-        setResults(data.results || []);
+        const nextResults = data.results || [];
+        setResults(nextResults);
         setAiUsed(!!data.ai_used);
         setAiEnabled(!!data.ai_enabled);
+        // persist the full snapshot after EVERY search (plain, deep, or filter-driven)
+        // so it survives navigation and a later restore reflects the latest state.
+        saveSearch({
+          q,
+          direction,
+          selIndustries,
+          location,
+          deep,
+          results: nextResults,
+          aiUsed: !!data.ai_used,
+          aiEnabled: !!data.ai_enabled,
+        });
       } catch {
         setResults([]);
         setAiUsed(false);
@@ -55,11 +75,23 @@ export default function DirectoryPage() {
         else setLoading(false);
       }
     },
-    [q, direction, selIndustries, location],
+    [q, direction, selIndustries, location, saveSearch],
   );
 
+  // Auto-search should fire ONLY when the user actively changes a filter or the
+  // direction — never as a side effect of mount/restore (which would overwrite
+  // restored results, including a deep/AI search). We arm this flag from the
+  // user's interaction handlers; the effect ignores changes until it's armed.
+  const userChangedRef = useRef(false);
   useEffect(() => {
-    if (!locked) run();
+    if (locked) return;
+    if (!userChangedRef.current) {
+      // mount/restore path: if there's no saved search at all, do the default
+      // load once; otherwise keep whatever was restored and wait for the user.
+      if (!saved.hasSearched) run();
+      return;
+    }
+    run();
   }, [direction, selIndustries, location, locked]); // eslint-disable-line
 
   // close panel on outside click
@@ -76,12 +108,38 @@ export default function DirectoryPage() {
     e.preventDefault();
     run();
   }
+
+  const clearSearch = useCallback(async () => {
+    setQ("");
+    setAiUsed(false);
+    resetSearch();
+    setLoading(true);
+    try {
+      const data = await searchMembers({
+        q: "",
+        direction,
+        industry: selIndustries,
+        location: location.trim(),
+      });
+      setResults(data.results || []);
+      setAiUsed(!!data.ai_used);
+      setAiEnabled(!!data.ai_enabled);
+    } catch {
+      setResults([]);
+      setAiUsed(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [direction, selIndustries, location, resetSearch]);
+
   function toggleIndustry(id) {
+    userChangedRef.current = true;
     setSelIndustries((s) =>
       s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
     );
   }
   function clearFilters() {
+    userChangedRef.current = true;
     setSelIndustries([]);
     setLocation("");
     setOpenPanel(null);
@@ -115,7 +173,10 @@ export default function DirectoryPage() {
           {/* direction toggle with clearer labels */}
           <div className="mb-3 flex gap-1 rounded-lg bg-slate-50 p-1 text-xs sm:text-sm">
             <button
-              onClick={() => setDirection("offering")}
+              onClick={() => {
+                userChangedRef.current = true;
+                setDirection("offering");
+              }}
               className={
                 "flex-1 rounded-md px-2 py-1.5 " +
                 (direction === "offering"
@@ -126,7 +187,10 @@ export default function DirectoryPage() {
               Find what I need
             </button>
             <button
-              onClick={() => setDirection("looking_for")}
+              onClick={() => {
+                userChangedRef.current = true;
+                setDirection("looking_for");
+              }}
               className={
                 "flex-1 rounded-md px-2 py-1.5 " +
                 (direction === "looking_for"
@@ -156,8 +220,18 @@ export default function DirectoryPage() {
                     ? "What are you looking for? e.g. HR services, soya suppliers"
                     : "What do you offer? e.g. HR services, legal advice"
                 }
-                className="w-full bg-transparent py-2.5 pl-9 pr-3 text-sm focus:outline-none"
+                className="w-full bg-transparent py-2.5 pl-9 pr-9 text-sm focus:outline-none"
               />
+              {q && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
             <button
               type="submit"
@@ -229,7 +303,10 @@ export default function DirectoryPage() {
                 <input
                   autoFocus
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={(e) => {
+                    userChangedRef.current = true;
+                    setLocation(e.target.value);
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && setOpenPanel(null)}
                   placeholder="e.g. Nairobi"
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none"
@@ -244,8 +321,12 @@ export default function DirectoryPage() {
           <p className="py-12 text-center text-sm text-slate-400">Searching…</p>
         ) : results.length === 0 ? (
           <div className="py-12 text-center">
-            <p className="text-sm text-slate-400">No members found.</p>
-            {q.trim() && !aiUsed && aiEnabled && (
+            <p className="text-sm text-slate-400">
+              {aiUsed
+                ? "No members found, including a deeper search."
+                : "No members found."}
+            </p>
+            {q.trim() && aiEnabled && (
               <button
                 onClick={() => run(true)}
                 disabled={deepLoading}
@@ -266,7 +347,7 @@ export default function DirectoryPage() {
                     ? "Showing related results"
                     : `${results.length} result${results.length === 1 ? "" : "s"}`}
                 </p>
-                {!aiUsed && aiEnabled && (
+                {aiEnabled && (
                   <button
                     onClick={() => run(true)}
                     disabled={deepLoading}
