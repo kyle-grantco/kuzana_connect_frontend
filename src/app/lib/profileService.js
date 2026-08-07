@@ -46,7 +46,7 @@ export async function searchMembers({
   location,
   deep = false,
   page = 1,
-  size = 20,
+  size = 50,
 } = {}) {
   const params = new URLSearchParams();
   if (q) params.set("q", q);

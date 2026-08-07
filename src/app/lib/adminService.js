@@ -6,7 +6,7 @@ export async function getMetrics() {
   return res.data;
 }
 
-export async function listUsers({ status, q, page = 1, size = 25 } = {}) {
+export async function listUsers({ status, q, page = 1, size = 50 } = {}) {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   if (q) params.set("q", q);
