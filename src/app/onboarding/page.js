@@ -241,37 +241,37 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="Add several with the + button. e.g. accounting, bulk grain supply, web design">
-              What do you offer?
+            <FieldLabel hint="Skills, experience, services, or products you can offer other members. e.g. getting into retail chains, hiring a sales team, web development, improving margins, bulk grain supply">
+              What can you offer or help with?
             </FieldLabel>
             <ChipInput
               value={form.offerings}
               onChange={(v) => set("offerings", v)}
-              placeholder="Type an offering, then press +"
+              placeholder="Type something you can offer, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel hint="Add several with the + button. e.g. suppliers, investors, new clients">
+            <FieldLabel hint="Help, advice, or things you need from other members. e.g. advice on scaling, someone who's cracked distribution, reliable suppliers, feedback on my pricing, new clients">
               What are you looking for?
             </FieldLabel>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
-              placeholder="Type a need, then press +"
+              placeholder="Type something you're looking for, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel hint="Up to ~60 words.">
+            <FieldLabel hint="A sentence or two about you or your business, and how you could help other members. Up to ~60 words.">
               Short intro (optional)
             </FieldLabel>
             <textarea
               value={form.intro}
               onChange={update("intro")}
-              rows={2}
+              rows={4}
               maxLength={400}
-              placeholder="A sentence about you or your business"
+              placeholder="e.g. what you do, what you've built, and what you can help others with"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
           </div>

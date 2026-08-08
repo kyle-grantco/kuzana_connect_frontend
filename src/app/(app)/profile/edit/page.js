@@ -170,16 +170,17 @@ export default function EditProfilePage() {
 
           <div>
             <span className="mb-0.5 block text-xs font-medium text-slate-600">
-              What do you offer?
+              What can you offer or help with?
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
-              The products or services you provide. e.g. bookkeeping, bulk maize
-              supply, logo design
+              Skills, experience, services, or products you can offer other
+              members. e.g. getting into retail chains, hiring a sales team, web
+              development, improving margins, bulk grain supply
             </p>
             <ChipInput
               value={form.offerings}
               onChange={(v) => set("offerings", v)}
-              placeholder="Add an offering and press +"
+              placeholder="Type something you can offer, then press +"
             />
           </div>
 
@@ -188,26 +189,31 @@ export default function EditProfilePage() {
               What are you looking for?
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
-              Help, services or connections you need. e.g. a supplier, an
-              accountant, new clients
+              Help, advice, or things you need from other members. e.g. advice
+              on scaling, someone who's cracked distribution, reliable
+              suppliers, feedback on my pricing, new clients
             </p>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
-              placeholder="Add a need and press +"
+              placeholder="Type something you're looking for, then press +"
             />
           </div>
 
           <div>
-            <span className="mb-1.5 block text-xs font-medium text-slate-600">
+            <span className="mb-0.5 block text-xs font-medium text-slate-600">
               Short intro (optional)
             </span>
+            <p className="mb-1.5 text-[11px] text-slate-400">
+              A sentence or two about you or your business, and how you could
+              help other members. Up to ~60 words.
+            </p>
             <textarea
               value={form.intro}
               onChange={update("intro")}
-              rows={2}
+              rows={4}
               maxLength={400}
-              placeholder="A sentence about you or your business"
+              placeholder="e.g. what you do, what you've built, and what you can help others with"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
           </div>
