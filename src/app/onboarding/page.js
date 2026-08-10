@@ -241,24 +241,24 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="Skills, experience, services, or products you can offer other members. e.g. getting into retail chains, hiring a sales team, web development, improving margins, bulk grain supply">
+            <FieldLabel hint="Skills, experience, services, or products you can offer other members. e.g. advice on getting into retail chains or hiring a sales team, web development, bulk grain supply">
               What can you offer or help with?
             </FieldLabel>
             <ChipInput
               value={form.offerings}
               onChange={(v) => set("offerings", v)}
-              placeholder="Type something you can offer, then press +"
+              placeholder="Type something, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel hint="Help, advice, or things you need from other members. e.g. advice on scaling, someone who's cracked distribution, reliable suppliers, feedback on my pricing, new clients">
+            <FieldLabel hint="Help, advice, or things you need from other members. e.g. advice on scaling, someone who's cracked distribution, reliable suppliers, new clients">
               What are you looking for?
             </FieldLabel>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
-              placeholder="Type something you're looking for, then press +"
+              placeholder="Type something, then press +"
             />
           </div>
 

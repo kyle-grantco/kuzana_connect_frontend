@@ -174,8 +174,8 @@ export default function EditProfilePage() {
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
               Skills, experience, services, or products you can offer other
-              members. e.g. getting into retail chains, hiring a sales team, web
-              development, improving margins, bulk grain supply
+              members. e.g. advice on getting into retail chains or hiring a
+              sales team, web development, bulk grain supply
             </p>
             <ChipInput
               value={form.offerings}
@@ -191,7 +191,7 @@ export default function EditProfilePage() {
             <p className="mb-1.5 text-[11px] text-slate-400">
               Help, advice, or things you need from other members. e.g. advice
               on scaling, someone who's cracked distribution, reliable
-              suppliers, feedback on my pricing, new clients
+              suppliers, new clients
             </p>
             <ChipInput
               value={form.looking_for}
