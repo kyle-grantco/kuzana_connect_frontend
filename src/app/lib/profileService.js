@@ -46,7 +46,7 @@ export async function searchMembers({
   location,
   deep = false,
   page = 1,
-  size = 50,
+  size = 20,
 } = {}) {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
@@ -58,4 +58,21 @@ export async function searchMembers({
   params.set("size", size);
   const res = await authRequest.get(`/search?${params.toString()}`);
   return res.data; // { total, page, size, results, ai_used }
+}
+
+// Browse the directory: live listing, filters + pagination, no query/AI.
+// Use for the default directory view and when the search box is cleared.
+export async function getMembers({
+  industry = [],
+  location,
+  page = 1,
+  size = 20,
+} = {}) {
+  const params = new URLSearchParams();
+  if (location) params.set("location", location);
+  industry.forEach((id) => params.append("industry", id));
+  params.set("page", page);
+  params.set("size", size);
+  const res = await authRequest.get(`/members?${params.toString()}`);
+  return res.data; // { total, page, size, results }
 }

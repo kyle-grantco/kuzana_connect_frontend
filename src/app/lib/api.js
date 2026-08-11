@@ -27,14 +27,36 @@ authRequest.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// On 401 — attempt one refresh, retry the original request, else fail cleanly
+// --- Single-flight refresh -----------------------------------------------------
+// When the access token expires, several requests usually 401 at once. If each
+// one refreshed independently we'd fire concurrent /auth/refresh calls; because
+// refresh tokens ROTATE (each refresh invalidates the previous), all but the
+// first would fail and wrongly log the user out. So we share ONE refresh promise
+// across all concurrent 401s: the first starts it, the rest await the same one,
+// then everyone retries with the new token.
+let refreshPromise = null;
+
+function runRefresh() {
+  if (!refreshPromise) {
+    refreshPromise = refreshSession().finally(() => {
+      refreshPromise = null; // reset once settled so future expiries can refresh
+    });
+  }
+  return refreshPromise;
+}
+
+// On 401 — attempt one (shared) refresh, retry the original request, else fail
 authRequest.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
-      const success = await refreshSession();
+      const success = await runRefresh();
       if (success) {
         originalRequest.headers["X-CSRF-TOKEN"] =
           useAuthStore.getState().csrfToken;
@@ -68,7 +90,12 @@ export const checkAuthStatus = async () => {
   }
 };
 
+// Guard against multiple redirects if several requests fail at once.
+let authFailureHandled = false;
+
 const handleAuthFailure = () => {
+  if (authFailureHandled) return;
+  authFailureHandled = true;
   useNotificationStore
     .getState()
     .notify("Session expired. Please sign in again.", "warning", 0);
