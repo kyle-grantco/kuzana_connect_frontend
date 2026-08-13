@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AuthShell from "@/app/components/auth/AuthShell";
 import AuthTabs from "@/app/components/auth/AuthTabs";
 import Input from "@/app/components/ui/Input";
@@ -22,6 +23,7 @@ export default function RegisterPage() {
   const [country, setCountry] = useState("KE");
   const [localPhone, setLocalPhone] = useState("");
   const [phoneValid, setPhoneValid] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [step, setStep] = useState("form"); // "form" | "confirm"
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,6 +42,12 @@ export default function RegisterPage() {
     if (!phoneValid || !form.whatsapp_number) {
       setError(
         "Please enter a valid WhatsApp number for the selected country.",
+      );
+      return;
+    }
+    if (!agreed) {
+      setError(
+        "Please agree to the Terms and Privacy Policy to create your account.",
       );
       return;
     }
@@ -103,6 +111,38 @@ export default function RegisterPage() {
               onChange={update("email")}
               placeholder="you@example.com"
             />
+
+            {/* Terms + Privacy consent */}
+            <label className="flex items-start gap-2 pt-1 text-xs text-slate-500">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => {
+                  setAgreed(e.target.checked);
+                  if (e.target.checked) setError("");
+                }}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-blue focus:ring-brand-blue/30"
+              />
+              <span>
+                I agree to the{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-brand-blue underline hover:text-brand-blue-600"
+                >
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-brand-blue underline hover:text-brand-blue-600"
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
 
             {error && <p className="text-xs text-brand-red">{error}</p>}
 

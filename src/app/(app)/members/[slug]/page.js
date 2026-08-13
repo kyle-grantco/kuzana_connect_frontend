@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   MessageCircle,
@@ -257,6 +258,15 @@ export default function MemberProfilePage() {
 
       {isMe && (
         <div className="mt-8 border-t border-slate-200 pt-5 text-center">
+          <div className="mb-3 flex items-center justify-center gap-4 text-[11px] text-slate-400">
+            <Link href="/terms" className="hover:text-brand-navy">
+              Terms
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link href="/privacy" className="hover:text-brand-navy">
+              Privacy Policy
+            </Link>
+          </div>
           <button
             onClick={handleDelete}
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-red"
