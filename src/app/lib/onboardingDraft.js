@@ -3,7 +3,9 @@
 
 const KEY = "kc_onboarding_draft";
 
-const EMPTY = {
+// Exported so the onboarding page can use the same shape for its initial
+// (server-matching) render, avoiding a second, drifting copy of the defaults.
+export const EMPTY = {
   title: "",
   business_name: "",
   intro: "",
@@ -11,8 +13,8 @@ const EMPTY = {
   industry_ids: [],
   offerings: [],
   looking_for: [],
-  contact_whatsapp: true,
-  contact_email: true,
+  contact_whatsapp: false,
+  contact_email: false,
   photo_url: "",
   primary_link: "",
   links: {},

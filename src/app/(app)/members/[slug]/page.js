@@ -37,7 +37,7 @@ export default function MemberProfilePage() {
       return;
     }
     if (fromOnboarding) {
-      router.push("/");
+      router.push("/members");
       return;
     } // no useful history after onboarding
     router.back(); // normal browse — preserves directory scroll

@@ -2,7 +2,7 @@
   "name": "Kuzana Connect",
   "short_name": "Kuzana",
   "description": "Discover and connect with members of the Kuzana community.",
-  "start_url": "/",
+  "start_url": "/members",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1d4ed8",

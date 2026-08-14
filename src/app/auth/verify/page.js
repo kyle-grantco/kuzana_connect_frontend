@@ -59,7 +59,7 @@ export default function VerifyPage() {
       if (res.onboarding_status === "not_started") {
         router.replace("/welcome");
       } else {
-        router.replace("/"); // directory (mvp/done both land here)
+        router.replace("/members"); // directory (mvp/done both land here)
       }
     } catch (err) {
       const msg =

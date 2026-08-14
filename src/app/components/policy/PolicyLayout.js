@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Shared shell for the public policy pages (Terms, Privacy). Readable column,
 // consistent typography, a back link, and cross-links between the two policies
 // plus a link home. Public — no auth required.
 export default function PolicyLayout({ title, lastUpdated, other, children }) {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto w-full max-w-3xl">
         <Link
-          href="/"
+          href="/members"
           className="mb-4 inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
+          onClick={(e) => {
+            e.preventDefault();
+            router.back();
+          }}
         >
-          <ArrowLeft size={14} /> Back to Kuzana Connect
+          <ArrowLeft size={14} /> Back
         </Link>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">

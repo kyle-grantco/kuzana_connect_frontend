@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, Info } from "lucide-react";
 import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
 import PhotoUpload from "@/app/components/ui/PhotoUpload";
@@ -16,12 +16,15 @@ import {
   getMyProfile,
 } from "@/app/lib/profileService";
 import { slugify, ensureUrl } from "@/app/lib/slug";
-import { loadDraft, saveDraft, clearDraft } from "@/app/lib/onboardingDraft";
+import {
+  loadDraft,
+  saveDraft,
+  clearDraft,
+  EMPTY,
+} from "@/app/lib/onboardingDraft";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
 
-// Card shell matching the auth/welcome screens (accent bar, border, shadow),
-// but wider and left-aligned since this is a form.
 function Card({ children }) {
   return (
     <div className="flex min-h-screen justify-center bg-slate-100 px-4 py-10">
@@ -47,22 +50,51 @@ function FieldLabel({ children, hint }) {
   );
 }
 
+// FastAPI returns validation errors as detail: [{ type, loc, msg, ... }], and
+// other errors as detail: "string". Never render the raw object (React throws
+// "Objects are not valid as a React child"); always resolve to a string.
+function errorMessage(err, fallback = "Couldn't save. Please try again.") {
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const first = detail[0];
+    if (first?.msg) return first.msg;
+  }
+  if (typeof err?.response?.data?.message === "string")
+    return err.response.data.message;
+  return fallback;
+}
+
+// Amber "heads-up" notice — distinct from red errors (which mean "you did
+// something wrong"). This is a nudge for a valid-but-worth-flagging choice.
+function ContactNotice({ children }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+      <Info size={15} className="mt-0.5 shrink-0 text-amber-500" />
+      <p className="text-xs leading-relaxed text-amber-800">{children}</p>
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { notify } = useNotificationStore();
   const setProfileStatus = useProfileStatus((s) => s.setStatus);
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(loadDraft());
+  // Start from a stable default so server and client render identically. The
+  // saved draft lives in localStorage (client-only); loading it during initial
+  // state would make the first client render differ from the server HTML and
+  // break hydration. So load it in an effect after mount instead.
+  const [form, setForm] = useState(EMPTY);
+  const [hydrated, setHydrated] = useState(false);
   const [industries, setIndustries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // "armed" once the user has been warned about having no contact method; a
+  // second action then proceeds. Reset whenever they add a channel.
+  const [contactWarned, setContactWarned] = useState(false);
 
-  // Already-onboarded users don't belong here (onboarding is one-time). Check the
-  // BACKEND (client store is empty on a direct reload) and, if they're already
-  // set up, quietly redirect to their profile. We DON'T gate the UI on this: the
-  // common case is a new user who needs onboarding, so we render immediately for
-  // responsiveness and only redirect the rare already-onboarded visitor.
   useEffect(() => {
     let active = true;
     (async () => {
@@ -82,9 +114,18 @@ export default function OnboardingPage() {
     };
   }, [router]);
 
+  // After mount (client only), merge any saved draft over the default.
   useEffect(() => {
-    saveDraft(form);
-  }, [form]);
+    const draft = loadDraft();
+    if (draft) setForm((f) => ({ ...f, ...draft }));
+    setHydrated(true);
+  }, []);
+
+  // Persist edits, but only after hydration so we don't overwrite the stored
+  // draft with the empty default on first render.
+  useEffect(() => {
+    if (hydrated) saveDraft(form);
+  }, [form, hydrated]);
   useEffect(() => {
     getIndustries()
       .then(setIndustries)
@@ -93,6 +134,14 @@ export default function OnboardingPage() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const update = (k) => (e) => set(k, e.target.value);
+
+  // A member is "reachable" if any channel is set. On step 1 only the toggles
+  // exist; on step 2 a link (primary or LinkedIn) also counts.
+  const hasStep1Contact = !!form.contact_whatsapp || !!form.contact_email;
+  const hasAnyContact =
+    hasStep1Contact ||
+    !!(form.primary_link && form.primary_link.trim()) ||
+    !!(form.links?.linkedin && form.links.linkedin.trim());
 
   function toggleIndustry(id) {
     set(
@@ -103,19 +152,19 @@ export default function OnboardingPage() {
     );
   }
 
-  async function goToMyProfile() {
-    try {
-      const me = await getMyProfile();
-      const n = me?.user?.member_number;
-      const name = me?.user?.full_name || "";
-      if (n) {
-        router.replace(`/members/${slugify(name)}-${n}?from=onboarding`);
-        return;
-      }
-    } catch {}
-    router.replace("/"); // fallback
+  // Toggling a contact channel clears the warning (they've resolved it).
+  function toggleContact(key) {
+    const next = !form[key];
+    set(key, next);
+    if (next) setContactWarned(false);
   }
 
+  async function goToMyProfile() {
+    router.replace("/members");
+  }
+
+  // Hard validations only (these block). Contact is handled separately as a
+  // warn-once nudge, not a hard block.
   function validateStep1() {
     if (!form.title.trim()) return "Tell us who you are.";
     if (!form.location.trim()) return "Add your location.";
@@ -123,8 +172,6 @@ export default function OnboardingPage() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
-    if (!form.contact_whatsapp && !form.contact_email)
-      return "Choose at least one way for members to reach you.";
     return "";
   }
 
@@ -135,6 +182,15 @@ export default function OnboardingPage() {
       return;
     }
     setError("");
+
+    // Contact nudge: if no channel chosen and not yet warned, warn and stop.
+    // A second click (still no channel) proceeds. Adding a channel clears it.
+    if (!hasStep1Contact && !contactWarned) {
+      setError(""); // don't stack a red error under the amber nudge
+      setContactWarned(true);
+      return;
+    }
+
     setLoading(true);
     try {
       await saveMvpProfile({
@@ -154,20 +210,27 @@ export default function OnboardingPage() {
         notify("Profile saved.", "success", 3000);
         await goToMyProfile();
       } else {
+        setContactWarned(false); // reset for step 2's own check
         setStep(2);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Couldn't save. Please try again.",
-      );
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
   }
 
   async function finish() {
-    setLoading(true);
     setError("");
+
+    // Final contact nudge: if there's no channel at all (no toggles AND no
+    // links), warn once, then allow finishing on the next click.
+    if (!hasAnyContact && !contactWarned) {
+      setContactWarned(true);
+      return;
+    }
+
+    setLoading(true);
     try {
       await saveEnrichment({
         photo_url: form.photo_url || null,
@@ -187,9 +250,7 @@ export default function OnboardingPage() {
       notify("Profile complete!", "success", 3000);
       await goToMyProfile();
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Couldn't save. Please try again.",
-      );
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -290,7 +351,7 @@ export default function OnboardingPage() {
                   <button
                     key={key}
                     type="button"
-                    onClick={() => set(key, !on)}
+                    onClick={() => toggleContact(key)}
                     className={
                       "rounded-full border px-3 py-1.5 text-xs transition-colors " +
                       (on
@@ -306,6 +367,12 @@ export default function OnboardingPage() {
           </div>
 
           {error && <p className="text-xs text-brand-red">{error}</p>}
+          {contactWarned && !hasStep1Contact && (
+            <ContactNotice>
+              You haven&apos;t chosen a contact method. Pick one above, or add a
+              link on the next step. Or tap Continue again to proceed anyway.
+            </ContactNotice>
+          )}
 
           <div className="pt-1">
             <Button
@@ -340,19 +407,30 @@ export default function OnboardingPage() {
           <Input
             label="Primary link (optional)"
             value={form.primary_link}
-            onChange={update("primary_link")}
+            onChange={(e) => {
+              set("primary_link", e.target.value);
+              if (e.target.value.trim()) setContactWarned(false);
+            }}
             placeholder="Your website or portfolio"
           />
           <Input
             label="LinkedIn (optional)"
             value={form.links?.linkedin || ""}
-            onChange={(e) =>
-              set("links", { ...form.links, linkedin: e.target.value })
-            }
+            onChange={(e) => {
+              set("links", { ...form.links, linkedin: e.target.value });
+              if (e.target.value.trim()) setContactWarned(false);
+            }}
             placeholder="Your LinkedIn profile link"
           />
 
           {error && <p className="text-xs text-brand-red">{error}</p>}
+          {contactWarned && !hasAnyContact && (
+            <ContactNotice>
+              Members won&apos;t have a way to reach you yet. Add a link below,
+              or go back to add WhatsApp or email. Or tap Finish again to
+              continue anyway.
+            </ContactNotice>
+          )}
 
           <div className="pt-1">
             <Button onClick={finish} loading={loading}>
@@ -360,7 +438,10 @@ export default function OnboardingPage() {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => setStep(1)}
+              onClick={() => {
+                setContactWarned(false);
+                setStep(1);
+              }}
               disabled={loading}
             >
               <span className="flex items-center gap-2">

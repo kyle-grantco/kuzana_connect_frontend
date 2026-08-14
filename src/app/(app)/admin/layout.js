@@ -33,7 +33,7 @@ export default function AdminLayout({ children }) {
           You don&apos;t have access to this area.
         </p>
         <button
-          onClick={() => router.replace("/")}
+          onClick={() => router.replace("/members")}
           className="mt-3 text-sm text-brand-blue"
         >
           Back to platform
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }) {
           </Link>
         </div>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/members")}
           className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300"
         >
           <ArrowLeft size={13} /> Platform view

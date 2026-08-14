@@ -37,7 +37,7 @@ src/app/
 │
 ├── (app)/                          # GUARDED group — parentheses = NOT in URL
 │   ├── layout.js                   # auth guard + profile-status load + AppShell
-│   ├── page.js                     # directory (URL "/")
+│   ├── page.js                     # directory (URL "/members")
 │   ├── members/[slug]/page.js      # member profile ([slug] = dynamic, NOT (slug))
 │   └── profile/edit/page.js        # edit own profile
 │
@@ -145,7 +145,7 @@ effects but doesn't block the build.
 - Admin UI (`/admin`) — pending backend RBAC.
 - Settings page — contact prefs + edits (edit page exists; formalize).
 - Search "smarter"/AI fallback — pending backend work.
-- Directory scroll preservation on back (currently `push("/")`; a `replace`-based
+- Directory scroll preservation on back (currently `push("/members")`; a `replace`-based
   history fix is noted but not applied).
 - Lint cleanup (welcome's unnecessary effect; silence the valid fetch-effects).
 - `.js` vs `.jsx` extension standardization.

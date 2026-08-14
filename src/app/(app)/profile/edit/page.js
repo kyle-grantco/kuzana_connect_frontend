@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
 import PhotoUpload from "@/app/components/ui/PhotoUpload";
@@ -16,6 +16,18 @@ import {
 import { slugify, ensureUrl } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
+// FastAPI returns validation errors as detail: [{ type, loc, msg, ... }] and
+// other errors as detail: "string". Never render the raw object (React throws
+// "Objects are not valid as a React child"); always resolve to a string.
+function errorMessage(err, fallback = "Couldn't save. Please try again.") {
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg;
+  if (typeof err?.response?.data?.message === "string")
+    return err.response.data.message;
+  return fallback;
+}
+
 export default function EditProfilePage() {
   const router = useRouter();
   const { notify } = useNotificationStore();
@@ -25,6 +37,9 @@ export default function EditProfilePage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Armed once the user has been warned about having no contact method; a second
+  // save then proceeds. Reset whenever they add a channel.
+  const [contactWarned, setContactWarned] = useState(false);
 
   useEffect(() => {
     getIndustries()
@@ -46,8 +61,8 @@ export default function EditProfilePage() {
           photo_url: p.photo_url || "",
           primary_link: p.primary_link || "",
           links: p.links || {},
-          contact_whatsapp: p.contact_whatsapp ?? true,
-          contact_email: p.contact_email ?? true,
+          contact_whatsapp: p.contact_whatsapp ?? false,
+          contact_email: p.contact_email ?? false,
         });
       })
       .catch(() => setError("Couldn't load your profile."));
@@ -68,6 +83,20 @@ export default function EditProfilePage() {
     );
   }
 
+  // Reachable if any channel is set: a contact toggle OR a public link.
+  const hasContact =
+    !!form.contact_whatsapp ||
+    !!form.contact_email ||
+    !!(form.primary_link && form.primary_link.trim()) ||
+    !!(form.links?.linkedin && form.links.linkedin.trim());
+
+  // Toggling a contact channel on clears the warning (they've resolved it).
+  function toggleContact(key) {
+    const next = !form[key];
+    set(key, next);
+    if (next) setContactWarned(false);
+  }
+
   function validate() {
     if (!form.title.trim()) return "Tell us who you are.";
     if (!form.location.trim()) return "Add your location.";
@@ -75,8 +104,6 @@ export default function EditProfilePage() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
-    if (!form.contact_whatsapp && !form.contact_email)
-      return "Choose at least one way for members to reach you.";
     return "";
   }
 
@@ -87,6 +114,14 @@ export default function EditProfilePage() {
       return;
     }
     setError("");
+
+    // Contact nudge: if no channel at all and not yet warned, warn and stop.
+    // A second save (still none) proceeds. Adding a channel clears it.
+    if (!hasContact && !contactWarned) {
+      setContactWarned(true);
+      return;
+    }
+
     setLoading(true);
     try {
       await updateProfile({
@@ -113,11 +148,9 @@ export default function EditProfilePage() {
       });
       notify("Profile updated.", "success", 3000);
       if (memberNo) router.replace(`/members/${slugify(name)}-${memberNo}`);
-      else router.replace("/");
+      else router.replace("/members");
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Couldn't save. Please try again.",
-      );
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -225,15 +258,19 @@ export default function EditProfilePage() {
           <Input
             label="Primary link (optional)"
             value={form.primary_link}
-            onChange={update("primary_link")}
+            onChange={(e) => {
+              set("primary_link", e.target.value);
+              if (e.target.value.trim()) setContactWarned(false);
+            }}
             placeholder="Your website or portfolio"
           />
           <Input
             label="LinkedIn (optional)"
             value={form.links?.linkedin || ""}
-            onChange={(e) =>
-              set("links", { ...form.links, linkedin: e.target.value })
-            }
+            onChange={(e) => {
+              set("links", { ...form.links, linkedin: e.target.value });
+              if (e.target.value.trim()) setContactWarned(false);
+            }}
             placeholder="Your LinkedIn profile link"
           />
 
@@ -251,7 +288,7 @@ export default function EditProfilePage() {
                   <button
                     key={key}
                     type="button"
-                    onClick={() => set(key, !on)}
+                    onClick={() => toggleContact(key)}
                     className={
                       "rounded-full border px-3 py-1.5 text-xs transition-colors " +
                       (on
@@ -267,6 +304,15 @@ export default function EditProfilePage() {
           </div>
 
           {error && <p className="text-xs text-brand-red">{error}</p>}
+          {contactWarned && !hasContact && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <Info size={15} className="mt-0.5 shrink-0 text-amber-500" />
+              <p className="text-xs leading-relaxed text-amber-800">
+                Members won&apos;t have a way to reach you. Add a contact method
+                or a link above. Or tap Save again to continue anyway.
+              </p>
+            </div>
+          )}
 
           <Button onClick={save} loading={loading}>
             Save changes
