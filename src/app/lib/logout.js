@@ -22,7 +22,7 @@ export async function logout() {
 
   if (typeof window !== "undefined") {
     setTimeout(() => {
-      window.location.href = "/auth/login";
+      window.location.href = "/";
     }, 500);
   }
 }
