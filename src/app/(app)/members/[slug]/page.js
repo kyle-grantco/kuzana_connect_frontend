@@ -40,7 +40,7 @@ export default function MemberProfilePage() {
       router.push("/members");
       return;
     } // no useful history after onboarding
-    router.back(); // normal browse — preserves directory scroll
+    router.push("/members"); // normal browse — preserves directory scroll
   }
   const { notify } = useNotificationStore();
   const isSearchable = useProfileStatus((s) => s.isSearchable);
