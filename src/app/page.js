@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Kuzana Connect",
   description:
-    "Find the right person for what you need, from our community of entrepreneurs.",
+    "Find who can help you grow, from our community of entrepreneurs, whether it's a supplier, a partner, a mentor, or someone who's done what you're trying to do, and be discovered too.",
 };
 
 export default function LandingPage() {
@@ -18,15 +18,12 @@ export default function LandingPage() {
 
         <section className="lp__hero">
           <div className="lp__copy">
-            <h1 className="lp__lead">
-              Find the right person for what you need.
-            </h1>
+            <h1 className="lp__lead">Find who can help you grow.</h1>
 
             <p className="lp__rest">
-              From our community of entrepreneurs, whether you&apos;re looking
-              for a supplier, a partner, advice on cracking distribution, or
-              someone who&apos;s done what you&apos;re trying to do. And be
-              discovered too.
+              From our community of entrepreneurs, whether it&apos;s a supplier,
+              a partner, a mentor, or someone who&apos;s done what you&apos;re
+              trying to do. And be discovered too.
             </p>
 
             <div className="lp__cta">
@@ -83,7 +80,8 @@ export default function LandingPage() {
         :root {
           --kz-blue: #3b5a86;
           --kz-blue-strong: #34517a;
-          --kz-yellow: #f0c060;
+          --kz-yellow: #f0c060;        /* raw logo yellow: fills, wash, accents */
+          --kz-yellow-text: #c8901a;   /* deepened for legible heading text on white */
           --kz-ink: #17223b;
           --kz-slate: #5f6b82;
         }
@@ -144,7 +142,7 @@ export default function LandingPage() {
           line-height: 1.1;
           font-weight: 800;
           letter-spacing: -0.04em;
-          color: var(--kz-yellow);
+          color: var(--kz-yellow-text);
         }
 
         .lp__rest {
@@ -216,7 +214,6 @@ export default function LandingPage() {
           padding: 1.25rem;
           box-shadow: 0 34px 64px -36px rgba(23, 34, 59, 0.42);
         }
-
         .lp__search {
           display: flex;
           align-items: center;
