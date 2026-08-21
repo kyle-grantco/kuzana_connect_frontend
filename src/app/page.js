@@ -3,384 +3,167 @@ import Link from "next/link";
 export const metadata = {
   title: "Kuzana Connect",
   description:
-    "Find who can help you grow, from our community of entrepreneurs, whether it's a supplier, a partner, a mentor, or someone who's done what you're trying to do, and be discovered too.",
+    "A network where founders find the people they need, a trusted introduction away. A reliable service provider, advice from someone who's done it, an investor, among others.",
 };
+
+// Illustrative testimonials — PLACEHOLDER copy. Swap for real member quotes
+// before this matters. Kept clearly generic so nothing misleads in the meantime.
+const TESTIMONIALS = [
+  {
+    initials: "AM",
+    name: "Amina M.",
+    role: "Founder, agri-processing",
+    quote:
+      "I was introduced to an investor through Connect and closed the round I'd been chasing for months. The intro was warm, so the conversation actually happened.",
+    tag: "Met an investor",
+  },
+  {
+    initials: "JK",
+    name: "James K.",
+    role: "Founder, logistics",
+    quote:
+      "I found a business partner here. Someone already vouched for him, so I trusted the introduction from day one. We've been building together since.",
+    tag: "Found a partner",
+  },
+  {
+    initials: "WN",
+    name: "Wanjiru N.",
+    role: "Founder, consumer goods",
+    quote:
+      "A growth marketer I connected with fixed how we acquire customers. Sales are up and I stopped guessing. I'd never have reached her cold.",
+    tag: "Met a growth marketer",
+  },
+];
+
+const STEPS = [
+  {
+    n: "1",
+    title: "Reach people you couldn't on your own",
+    body: "The service provider, partner, or investor you need is here, and you can actually get to them.",
+  },
+  {
+    n: "2",
+    title: "Your introductions land",
+    body: "Every member was vouched for by someone already inside, so reaching out isn't a cold message to a stranger. It gets a reply.",
+  },
+  {
+    n: "3",
+    title: "You're findable too",
+    body: "The founders who need what you offer can find you, and reach you with the same trust.",
+  },
+];
 
 export default function LandingPage() {
   return (
-    <main className="lp">
-      <div className="lp__wrap">
-        <header className="lp__brand">
+    <main className="min-h-[100svh] bg-white font-sans text-brand-ink antialiased">
+      {/* nav: logo + accessible Login (members land here after logout) */}
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-6">
+        <div className="flex items-center gap-2 text-[1.02rem] font-bold text-brand-navy">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/kuzana-logo.png" alt="" className="lp__mark" />
+          <img src="/kuzana-logo.png" alt="" className="h-[30px] w-auto" />
           <span>Kuzana Connect</span>
-        </header>
+        </div>
+        <Link
+          href="/auth/login"
+          className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-brand-blue transition-colors hover:border-brand-blue hover:bg-slate-50"
+        >
+          Log in
+        </Link>
+      </nav>
 
-        <section className="lp__hero">
-          <div className="lp__copy">
-            <h1 className="lp__lead">Find who can help you grow.</h1>
+      <div className="mx-auto w-full max-w-6xl px-6 pb-8">
+        {/* hero: two columns on large screens — heading left, description right */}
+        <section className="grid items-center gap-8 py-14 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:py-20">
+          <h1 className="text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-[#c8901a] sm:text-[2.7rem] md:text-[3.3rem]">
+            Your next big connection is already here.
+          </h1>
+          <p className="text-[1.05rem] leading-relaxed text-slate-500 md:text-[1.25rem]">
+            A network where founders find the people they need, a trusted
+            introduction away. A reliable service provider, advice from someone
+            who&apos;s done it, an investor, among others.
+          </p>
+        </section>
 
-            <p className="lp__rest">
-              From our community of entrepreneurs, whether it&apos;s a supplier,
-              a partner, a mentor, or someone who&apos;s done what you&apos;re
-              trying to do. And be discovered too.
-            </p>
-
-            <div className="lp__cta">
-              <Link href="/auth/register" className="lp__btn lp__btn--primary">
-                Join now
-              </Link>
-
-              <Link href="/auth/login" className="lp__login">
-                Login <span>→</span>
-              </Link>
-            </div>
-          </div>
-
-          <div className="lp__art" aria-hidden="true">
-            <div className="lp__search">
-              <span className="lp__search-icon">⌕</span>
-              <span className="lp__search-text">
-                a digital marketing advisor
-              </span>
-            </div>
-
-            <div className="lp__cards">
-              <MiniCard
-                initials="LM"
-                name="Lydia M."
-                role="Marketing consultant"
-                tags={["digital marketing", "brand strategy"]}
-              />
-
-              <MiniCard
-                initials="TK"
-                name="Tim K."
-                role="Founder, growth studio"
-                tags={["paid ads", "content strategy"]}
-              />
-            </div>
+        {/* testimonials: high on the page. This is what does the selling. */}
+        <section aria-label="Member stories" className="pb-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            {TESTIMONIALS.map((t) => (
+              <figure
+                key={t.name}
+                className="m-0 flex flex-col gap-3.5 rounded-2xl border border-slate-100 bg-[#fdfdff] p-5"
+              >
+                <span className="self-start rounded-full bg-brand-yellow-100 px-2.5 py-1 text-xs font-semibold text-brand-yellow-700">
+                  {t.tag}
+                </span>
+                <blockquote className="m-0 text-[0.95rem] leading-relaxed text-brand-navy">
+                  “{t.quote}”
+                </blockquote>
+                <figcaption className="mt-auto flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-blue text-xs font-bold text-white">
+                    {t.initials}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-semibold text-brand-navy">
+                      {t.name}
+                    </span>
+                    <span className="block text-xs text-slate-400">
+                      {t.role}
+                    </span>
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </section>
 
-        <footer className="lp__footer">
-          <Link href="/terms" target="blank">
+        {/* why it works: value first, subheading separated from description */}
+        <section className="py-12">
+          <h2 className="mb-6 text-[1.4rem] font-bold tracking-tight text-brand-navy md:text-[1.7rem]">
+            Why it works
+          </h2>
+          <div className="grid gap-7 md:grid-cols-3">
+            {STEPS.map((s) => (
+              <div key={s.n} className="flex flex-col gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue-50 text-sm font-bold text-brand-blue">
+                  {s.n}
+                </span>
+                <h3 className="text-[0.98rem] font-semibold text-brand-navy">
+                  {s.title}
+                </h3>
+                <p className="m-0 text-[0.93rem] leading-relaxed text-slate-500">
+                  {s.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-10 rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 text-[0.92rem] leading-relaxed text-slate-500">
+            Kuzana Connect is invite-only. If a member sent you a link, open it
+            to join. Already a member?{" "}
+            <Link
+              href="/auth/login"
+              className="font-semibold text-brand-blue hover:underline"
+            >
+              Log in
+            </Link>
+            .
+          </p>
+        </section>
+
+        <footer className="flex items-center gap-2 pt-4 text-xs text-slate-400">
+          <Link href="/terms" target="_blank" className="hover:text-brand-blue">
             Terms
           </Link>
           <span>·</span>
-          <Link href="/privacy" target="blank">
+          <Link
+            href="/privacy"
+            target="_blank"
+            className="hover:text-brand-blue"
+          >
             Privacy
           </Link>
         </footer>
       </div>
-
-      <div className="lp__wash" aria-hidden="true" />
-
-      <style>{`
-        :root {
-          --kz-blue: #3b5a86;
-          --kz-blue-strong: #34517a;
-          --kz-yellow: #f0c060;        /* raw logo yellow: fills, wash, accents */
-          --kz-yellow-text: #c8901a;   /* deepened for legible heading text on white */
-          --kz-ink: #17223b;
-          --kz-slate: #5f6b82;
-        }
-
-        .lp {
-          position: relative;
-          min-height: 100svh;
-          background: #ffffff;
-          color: var(--kz-ink);
-          overflow: hidden;
-          -webkit-font-smoothing: antialiased;
-          font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
-            "Segoe UI", sans-serif;
-        }
-
-        .lp__wrap {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-          max-width: 72rem;
-          min-height: 100svh;
-          margin: 0 auto;
-          padding: 1.6rem 1.5rem 1.2rem;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .lp__brand {
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-          font-size: 1.02rem;
-          font-weight: 700;
-          color: var(--kz-ink);
-        }
-
-        .lp__mark {
-          height: 30px;
-          width: auto;
-        }
-
-        .lp__hero {
-          flex: 1;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 3.5rem;
-          align-items: center;
-          min-height: calc(100svh - 7rem);
-        }
-
-        .lp__copy {
-          max-width: 34rem;
-        }
-
-        .lp__lead {
-          margin: 0 0 1rem;
-          font-size: clamp(2.2rem, 4.8vw, 3.3rem);
-          line-height: 1.1;
-          font-weight: 800;
-          letter-spacing: -0.04em;
-          color: var(--kz-yellow-text);
-        }
-
-        .lp__rest {
-          max-width: 32rem;
-          margin: 0 0 2rem;
-          font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-          line-height: 1.5;
-          font-weight: 400;
-          color: var(--kz-slate);
-        }
-
-        .lp__cta {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .lp__btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.85rem 1.8rem;
-          border-radius: 0.7rem;
-          font-size: 1rem;
-          font-weight: 600;
-          text-decoration: none;
-          transition:
-            transform 0.15s ease,
-            background 0.15s ease,
-            box-shadow 0.15s ease;
-        }
-
-        .lp__btn--primary {
-          background: var(--kz-blue);
-          color: #ffffff;
-          box-shadow: 0 12px 24px -12px rgba(59, 90, 134, 0.75);
-        }
-
-        .lp__btn--primary:hover {
-          background: var(--kz-blue-strong);
-          transform: translateY(-1px);
-        }
-
-        .lp__login {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35rem;
-          color: var(--kz-blue);
-          font-size: 1rem;
-          font-weight: 600;
-          text-decoration: none;
-        }
-
-        .lp__login span {
-          font-size: 1.1rem;
-          transition: transform 0.15s ease;
-        }
-
-        .lp__login:hover span {
-          transform: translateX(2px);
-        }
-
-        .lp__art {
-          position: relative;
-          background: #fdfdff;
-          border: 1px solid #eef1f7;
-          border-radius: 1.15rem;
-          padding: 1.25rem;
-          box-shadow: 0 34px 64px -36px rgba(23, 34, 59, 0.42);
-        }
-        .lp__search {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-          background: #ffffff;
-          border: 1px solid #e6ebf3;
-          border-radius: 0.75rem;
-          padding: 0.8rem 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .lp__search-icon {
-          color: var(--kz-blue);
-          font-size: 1.15rem;
-        }
-
-        .lp__search-text {
-          color: var(--kz-slate);
-          font-size: 0.92rem;
-        }
-
-        .lp__cards {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .lp__card {
-          background: #ffffff;
-          border: 1px solid #eef1f7;
-          border-radius: 0.85rem;
-          padding: 0.9rem 1rem;
-          display: flex;
-          gap: 0.8rem;
-          align-items: flex-start;
-        }
-
-        .lp__av {
-          height: 40px;
-          width: 40px;
-          flex: none;
-          border-radius: 50%;
-          color: #ffffff;
-          font-size: 0.82rem;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--kz-blue);
-        }
-
-        .lp__name {
-          font-weight: 600;
-          color: var(--kz-ink);
-          font-size: 0.94rem;
-        }
-
-        .lp__role {
-          color: #94a0b8;
-          font-size: 0.8rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .lp__tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.35rem;
-        }
-
-        .lp__tag {
-          font-size: 0.74rem;
-          padding: 0.2rem 0.6rem;
-          border-radius: 999px;
-          background: #eef2fa;
-          color: var(--kz-blue);
-        }
-
-        .lp__footer {
-          display: flex;
-          align-items: center;
-          gap: 0.55rem;
-          padding-top: 1rem;
-          color: #9aa4b7;
-          font-size: 0.78rem;
-        }
-
-        .lp__footer a {
-          color: inherit;
-          text-decoration: none;
-        }
-
-        .lp__footer a:hover {
-          color: var(--kz-blue);
-        }
-
-        .lp__wash {
-          position: absolute;
-          z-index: 0;
-          right: -14%;
-          top: 4%;
-          width: 50vmax;
-          height: 50vmax;
-          border-radius: 50%;
-          background:
-            radial-gradient(
-              closest-side,
-              rgba(240, 192, 96, 0.2),
-              transparent 68%
-            ),
-            radial-gradient(
-              closest-side,
-              rgba(59, 90, 134, 0.1),
-              transparent 75%
-            );
-          filter: blur(6px);
-          pointer-events: none;
-        }
-
-        @media (max-width: 860px) {
-          .lp__wrap {
-            min-height: auto;
-          }
-
-          .lp__hero {
-            grid-template-columns: 1fr;
-            gap: 2.25rem;
-            min-height: 0;
-            padding: 3.5rem 0 2rem;
-          }
-
-          .lp__lead {
-            font-size: clamp(2rem, 8.5vw, 2.7rem);
-          }
-
-          .lp__art {
-            max-width: 38rem;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .lp__btn,
-          .lp__login span {
-            transition: none;
-          }
-        }
-      `}</style>
     </main>
-  );
-}
-
-function MiniCard({ initials, name, role, tags }) {
-  return (
-    <div className="lp__card">
-      <div className="lp__av">{initials}</div>
-
-      <div>
-        <div className="lp__name">{name}</div>
-        <div className="lp__role">{role}</div>
-
-        <div className="lp__tags">
-          {tags.map((tag) => (
-            <span key={tag} className="lp__tag">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }

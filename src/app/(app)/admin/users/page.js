@@ -15,8 +15,6 @@ import {
   activateUser,
   deleteUser,
   setUserRole,
-  adminViewUser,
-  getMetrics,
 } from "@/app/lib/adminService";
 import { getMyProfile } from "@/app/lib/profileService";
 import { slugify } from "@/app/lib/slug";
@@ -50,7 +48,6 @@ export default function AdminMembersPage() {
       .catch(() => {});
   }, []);
 
-  // load a specific page (defaults to current `page`)
   const load = useCallback(
     async (toPage = page) => {
       setLoading(true);
@@ -74,8 +71,6 @@ export default function AdminMembersPage() {
     [status, q, size, page],
   );
 
-  // Reload from page 1 whenever the filter/search-size context changes.
-  // (Search itself also submits via the form handler below.)
   useEffect(() => {
     load(1);
   }, [status, size]); // eslint-disable-line
@@ -95,7 +90,7 @@ export default function AdminMembersPage() {
     try {
       await fn(memberNumber);
       notify(okMsg, "success", 2500);
-      load(); // stay on current page
+      load();
     } catch (e) {
       notify(e.response?.data?.detail || "Action failed.", "error", 3500);
     }
@@ -103,7 +98,6 @@ export default function AdminMembersPage() {
 
   return (
     <div>
-      {/* row 1: status tabs (scroll on mobile) + icon-only refresh */}
       <div className="mb-3 flex items-center gap-2">
         <div className="flex flex-1 gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 text-xs">
           {STATUS_TABS.map((t) => (
@@ -132,7 +126,6 @@ export default function AdminMembersPage() {
         </button>
       </div>
 
-      {/* row 2: search */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -152,7 +145,6 @@ export default function AdminMembersPage() {
         />
       </form>
 
-      {/* row 3: count + per-page */}
       <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
         <span>
           {total === 0 ? "0" : `${from}\u2013${to}`} of {total}
@@ -180,13 +172,14 @@ export default function AdminMembersPage() {
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[720px] text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs text-slate-500">
                 <tr>
                   <th className="px-4 py-2.5">#</th>
                   <th className="px-4 py-2.5">Name</th>
                   <th className="px-4 py-2.5">Status</th>
                   <th className="px-4 py-2.5">Profile</th>
+                  <th className="px-4 py-2.5">Invites</th>
                   <th className="px-4 py-2.5">Role</th>
                   <th className="px-4 py-2.5">View</th>
                   {isSuper && <th className="px-4 py-2.5">Actions</th>}
@@ -232,6 +225,18 @@ export default function AdminMembersPage() {
                     <td className="px-4 py-2.5 text-xs text-slate-500">
                       {u.completion_status || "—"}
                     </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {u.invites_made ? (
+                        <span className="text-slate-600">
+                          {u.invites_joined}
+                          <span className="text-slate-400">
+                            /{u.invites_made} joined
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5">
                       {isSuper ? (
                         <select
@@ -249,7 +254,7 @@ export default function AdminMembersPage() {
                                 "Role updated.",
                               );
                             } else {
-                              e.target.value = u.role; // revert the select
+                              e.target.value = u.role;
                             }
                           }}
                           className="rounded border border-slate-200 bg-white px-2 py-1 text-xs"
@@ -338,7 +343,6 @@ export default function AdminMembersPage() {
             </table>
           </div>
 
-          {/* pagination: prev/next at the bottom, after the rows */}
           <div className="mt-3 flex items-center justify-end gap-2 text-xs text-slate-500">
             <span>
               Page {page} of {totalPages}

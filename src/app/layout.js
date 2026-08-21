@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Kuzana Connect",
-  description: "Discover and connect with members of the Kuzana community.",
+  description: "Discover what other founders are building, what they offer, and what they're looking for. Connect with them and be discovered too.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -14,7 +14,22 @@ export const metadata = {
     statusBarStyle: "default",
   },
   icons: { apple: "/apple-icon.png" },
+  openGraph: {
+    title: "Kuzana Connect",
+    description: "Discover what other founders are building, what they offer, and what they're looking for. Connect with them and be discovered too.",
+    url: "https://connect.kuzana.co",
+    siteName: "Kuzana Connect",
+    images: [{ url: "https://connect.kuzana.co/og-image.png", width: 1200, height: 630 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kuzana Connect",
+    description: "Discover what other founders are building, what they offer, and what they're looking for. Connect with them and be discovered too.",
+    images: ["https://connect.kuzana.co/og-image.png"],
+  },
 };
+
 export const viewport = { themeColor: "#1d4ed8" };
 
 export default function RootLayout({ children }) {

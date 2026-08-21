@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthShell from "@/app/components/auth/AuthShell";
 import AuthTabs from "@/app/components/auth/AuthTabs";
@@ -10,11 +10,23 @@ import PhoneInput from "@/app/components/ui/PhoneInput";
 import Button from "@/app/components/ui/Button";
 import { register } from "@/app/lib/authService";
 import { setPending } from "@/app/lib/pendingVerification";
+import {
+  getPendingInvite,
+  setPendingInvite,
+  clearPendingInvite,
+} from "@/app/lib/pendingInvite";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
-export default function RegisterPage() {
+// Invite-only: registration requires a token. Source of truth is the ?invite=
+// query param (survives refresh/new-tab/bookmark); sessionStorage is a fallback
+// for in-app navigations that drop the query. With neither, we show a blocked
+// state instead of the form — you can't self-register into Kuzana Connect.
+function RegisterInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { notify } = useNotificationStore();
+
+  const [inviteToken, setInviteToken] = useState(undefined); // undefined = resolving
   const [form, setForm] = useState({
     full_name: "",
     whatsapp_number: "",
@@ -27,6 +39,19 @@ export default function RegisterPage() {
   const [step, setStep] = useState("form"); // "form" | "confirm"
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Resolve the invite token once on mount: query param wins, else the
+  // sessionStorage mirror. Persist the query param into the mirror so a later
+  // refresh that somehow drops the query still holds.
+  useEffect(() => {
+    const fromQuery = searchParams.get("invite");
+    if (fromQuery) {
+      setPendingInvite(fromQuery);
+      setInviteToken(fromQuery);
+      return;
+    }
+    setInviteToken(getPendingInvite());
+  }, [searchParams]);
 
   const update = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -59,7 +84,8 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await register(form);
+      await register({ ...form, invite_token: inviteToken });
+      clearPendingInvite(); // token now carried on the user row server-side
       setPending({ whatsapp_number: form.whatsapp_number, flow: "register" });
       router.push("/auth/verify");
     } catch (err) {
@@ -75,12 +101,35 @@ export default function RegisterPage() {
     }
   }
 
+  // Still resolving the token — render nothing to avoid a flash of either state.
+  if (inviteToken === undefined) return null;
+
+  // No invite -> blocked. Invite-only entry, no self-registration.
+  if (!inviteToken) {
+    return (
+      <AuthShell
+        title="Kuzana Connect is invite-only"
+        subtitle="You need an invite link from a member to join."
+      >
+        <div className="space-y-4 text-center">
+          <p className="text-sm leading-relaxed text-slate-500">
+            If someone sent you an invite link, open it to continue.
+          </p>
+          <Link
+            href="/auth/login"
+            className="inline-block text-sm text-brand-blue hover:text-brand-blue-600"
+          >
+            Already a member? Log in
+          </Link>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell
       title={step === "form" ? "Create your account" : "Confirm your number"}
-      subtitle={
-        step === "form" ? "Discover and connect with members" : undefined
-      }
+      subtitle={step === "form" ? "Accept your invitation to join" : undefined}
     >
       {step === "form" ? (
         <>
@@ -176,5 +225,14 @@ export default function RegisterPage() {
         </div>
       )}
     </AuthShell>
+  );
+}
+
+// useSearchParams requires a Suspense boundary in the App Router.
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterInner />
+    </Suspense>
   );
 }

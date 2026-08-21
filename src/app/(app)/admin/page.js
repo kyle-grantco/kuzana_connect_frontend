@@ -67,7 +67,9 @@ export default function AdminDashboard() {
 
   const a = m.accounts,
     p = m.profiles,
-    s = m.search;
+    s = m.search,
+    inv = m.invites,
+    conn = m.connections;
 
   return (
     <div className="space-y-8">
@@ -111,6 +113,71 @@ export default function AdminDashboard() {
           <Stat label="Logged in" soon />
         </div>
       </section>
+
+      {/* ── Invites: the growth loop ─────────────────────────────────────── */}
+      {inv && (
+        <section>
+          <h2 className="mb-1 text-sm font-semibold text-slate-500">Invites</h2>
+          <p className="mb-3 text-xs text-slate-400">
+            The invite loop. Conversion is joined out of all invites sent
+            (excluding cancelled).
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <Stat label="Total" value={inv.total} sub="all invites created" />
+            <Stat
+              label="Joined"
+              value={inv.joined}
+              pct={inv.conversion}
+              sub="accepted and became members"
+            />
+            <Stat
+              label="Pending"
+              value={inv.pending}
+              sub="sent, not yet joined"
+            />
+            <Stat
+              label="Cancelled"
+              value={inv.cancelled}
+              sub="revoked by the inviter"
+            />
+            <Stat
+              label="Active inviters"
+              value={inv.active_inviters}
+              sub="members who invited ≥ 1"
+            />
+          </div>
+        </section>
+      )}
+
+      {/* ── Connections: the core value metric ───────────────────────────── */}
+      {conn && (
+        <section>
+          <h2 className="mb-1 text-sm font-semibold text-slate-500">
+            Connections
+          </h2>
+          <p className="mb-3 text-xs text-slate-400">
+            When a member connects with another to reveal their contact and
+            reach out. The core measure of connections made.
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Stat
+              label="Total connections"
+              value={conn.total}
+              sub="times a member connected with another"
+            />
+            <Stat
+              label="Active connectors"
+              value={conn.active_connectors}
+              sub="members who reached out ≥ 1"
+            />
+            <Stat
+              label="Members reached"
+              value={conn.reached_members}
+              sub="members connected with ≥ 1 time"
+            />
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-1 text-sm font-semibold text-slate-500">Profiles</h2>

@@ -5,12 +5,28 @@
 import { publicRequest } from "./api";
 import { useAuthStore } from "@/app/store/authStore";
 
-// POST /auth/register -> creates account + auto-sends OTP
-export async function register({ full_name, whatsapp_number, email }) {
+// GET /invites/check/{token} -> validate an invite token (public, pre-auth).
+// Returns { valid, inviter_name?, inviter_member_number?, inviter_photo_url?, reason? }
+export async function checkInviteToken(token) {
+  const res = await publicRequest.get(
+    `/invites/check/${encodeURIComponent(token)}`,
+  );
+  return res.data;
+}
+
+// POST /auth/register -> creates account + auto-sends OTP.
+// invite_token is required by the backend (invite-only entry).
+export async function register({
+  full_name,
+  whatsapp_number,
+  email,
+  invite_token,
+}) {
   const res = await publicRequest.post("/auth/register", {
     full_name,
     whatsapp_number,
     email,
+    invite_token,
   });
   return res.data;
 }
