@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import {
   listMyInvites,
+  adminListUserInvites,
   createInvite,
   cancelInvite,
   inviteLink,
@@ -39,6 +40,7 @@ import { LIMITS } from "@/app/lib/vouch";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import ConfirmModal from "@/app/components/ui/ConfirmModal";
 import VouchForm from "@/app/components/app/VouchForm";
+import { engagementPeriod } from "@/app/lib/vouch";
 
 const PAGE_SIZE = 10;
 
@@ -49,7 +51,10 @@ function fieldError(err, fallback) {
   return fallback;
 }
 
-function InvitesSection(_props, ref) {
+function InvitesSection({ userId = null, readOnly = false }, ref) {
+  // userId set => admin viewing another member's invites (read-only).
+  const adminView = !!userId;
+  const isReadOnly = readOnly || adminView;
   const router = useRouter();
   const { notify } = useNotificationStore();
 
@@ -87,7 +92,9 @@ function InvitesSection(_props, ref) {
   const load = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const res = await listMyInvites({ page, page_size: PAGE_SIZE });
+      const res = adminView
+        ? await adminListUserInvites(userId, { page, page_size: PAGE_SIZE })
+        : await listMyInvites({ page, page_size: PAGE_SIZE });
       setData({
         items: res.items || [],
         total: res.total || 0,
@@ -182,9 +189,9 @@ function InvitesSection(_props, ref) {
     >
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-brand-navy">
-          Your invitations
+          {isReadOnly ? "Invitations" : "Your invitations"}
         </h2>
-        {!formOpen && (
+        {!isReadOnly && !formOpen && (
           <button
             onClick={openForm}
             className="flex items-center gap-1.5 rounded-lg border border-brand-blue/30 px-3 py-1.5 text-xs font-medium text-brand-blue hover:border-brand-blue hover:bg-brand-blue-50"
@@ -194,12 +201,13 @@ function InvitesSection(_props, ref) {
         )}
       </div>
       <p className="mb-4 text-xs text-slate-400">
-        Bring in people you trust. Each invite is a single-use link tied to your
-        vouch for that person.
+        {isReadOnly
+          ? "People this member has invited, and the status of each."
+          : "Bring in people you trust. Each invite is a single-use link tied to your vouch for that person."}
       </p>
 
       {/* freshly created -> share link */}
-      {created && (
+      {!isReadOnly && created && (
         <div className="mb-4 rounded-xl border border-brand-blue-100 bg-brand-blue-50 p-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold text-brand-blue-700">
@@ -236,7 +244,7 @@ function InvitesSection(_props, ref) {
       )}
 
       {/* create form */}
-      {formOpen && (
+      {!isReadOnly && formOpen && (
         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="mb-3 text-xs font-semibold text-slate-500">
             Invite someone
@@ -288,10 +296,12 @@ function InvitesSection(_props, ref) {
                 <StatusPill status={inv.status} />
               </div>
 
-              {/* metadata: relationship · year (quiet) */}
+              {/* metadata: relationship · period (quiet) */}
               <div className="px-4 pt-0.5 text-xs text-slate-400">
                 {inv.relationship_type}
-                {inv.year_of_engagement ? ` · ${inv.year_of_engagement}` : ""}
+                {engagementPeriod(inv.engaged_from, inv.engaged_to)
+                  ? ` · ${engagementPeriod(inv.engaged_from, inv.engaged_to)}`
+                  : ""}
               </div>
 
               {/* vouch (readable, its own space) */}
@@ -301,7 +311,7 @@ function InvitesSection(_props, ref) {
 
               {/* actions, set apart by a divider + subtle tint */}
               <div className="flex items-center gap-4 border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
-                {inv.status === "pending" && (
+                {!isReadOnly && inv.status === "pending" && (
                   <>
                     <button
                       onClick={() => copyLink(inv.token)}
@@ -316,6 +326,12 @@ function InvitesSection(_props, ref) {
                       <X size={13} /> Cancel
                     </button>
                   </>
+                )}
+                {isReadOnly && inv.status === "pending" && (
+                  <span className="text-xs text-slate-400">Pending</span>
+                )}
+                {isReadOnly && inv.status === "cancelled" && (
+                  <span className="text-xs text-slate-400">Cancelled</span>
                 )}
                 {inv.status === "joined" &&
                   (inv.invitee_member_number ? (

@@ -28,7 +28,7 @@ import { useProfileStatus } from "@/app/store/profileStatusStore";
 function Card({ children }) {
   return (
     <div className="flex min-h-screen justify-center bg-slate-100 px-4 py-10">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md md:max-w-xl">
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="p-6 sm:p-7">{children}</div>
         </div>
@@ -103,7 +103,7 @@ export default function OnboardingPage() {
         const status = me?.profile?.completion_status;
         const n = me?.user?.member_number;
         if (active && (status === "mvp" || status === "done") && n != null) {
-          router.replace(`/members/${slugify(me.user.full_name || "")}-${n}`);
+          router.replace("/members");
         }
       } catch {
         // check failed — let them proceed with onboarding
@@ -159,8 +159,10 @@ export default function OnboardingPage() {
     if (next) setContactWarned(false);
   }
 
-  async function goToMyProfile() {
-    router.replace("/members");
+  function goToMainPage() {
+    // Land new members on the main page (their suggestions) after onboarding,
+    // not their own profile.
+    router.replace("/members?from=onboarding");
   }
 
   // Hard validations only (these block). Contact is handled separately as a
@@ -208,7 +210,7 @@ export default function OnboardingPage() {
       if (exit) {
         clearDraft();
         notify("Profile saved.", "success", 3000);
-        await goToMyProfile();
+        await goToMainPage();
       } else {
         setContactWarned(false); // reset for step 2's own check
         setStep(2);
@@ -248,7 +250,7 @@ export default function OnboardingPage() {
       setProfileStatus({ isSearchable: true, completionStatus: "done" });
       clearDraft();
       notify("Profile complete!", "success", 3000);
-      await goToMyProfile();
+      await goToMainPage();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -302,29 +304,29 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="Skills, experience, services, or products you can offer other members. e.g. advice on getting into retail chains or hiring a sales team, web development, bulk grain supply">
+            <FieldLabel hint="What you do, or what you can help other members with. e.g. helping founders land their first customers, building websites for small businesses">
               What can you offer or help with?
             </FieldLabel>
             <ChipInput
               value={form.offerings}
               onChange={(v) => set("offerings", v)}
-              placeholder="Type something, then press +"
+              placeholder="Add one, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel hint="Help, advice, or things you need from other members. e.g. advice on scaling, someone who's cracked distribution, reliable suppliers, new clients">
-              What are you looking for?
+            <FieldLabel hint="What you're trying to do, or where you're stuck. e.g. marketing my product on a small budget, hiring a technical co-founder">
+              What are you working on or need help with?
             </FieldLabel>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
-              placeholder="Type something, then press +"
+              placeholder="Add one, then press +"
             />
           </div>
 
           <div>
-            <FieldLabel hint="A sentence or two about you or your business, and how you could help other members. Up to ~60 words.">
+            <FieldLabel hint="A line or two about you and what you do.">
               Short intro (optional)
             </FieldLabel>
             <textarea
@@ -332,7 +334,7 @@ export default function OnboardingPage() {
               onChange={update("intro")}
               rows={4}
               maxLength={400}
-              placeholder="e.g. what you do, what you've built, and what you can help others with"
+              placeholder="e.g. I run a solar business installing systems for homes and small shops across central Kenya"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
           </div>
@@ -369,8 +371,8 @@ export default function OnboardingPage() {
           {error && <p className="text-xs text-brand-red">{error}</p>}
           {contactWarned && !hasStep1Contact && (
             <ContactNotice>
-              You haven&apos;t chosen a contact method. Pick one above, or add a
-              link on the next step. Or tap Continue again to proceed anyway.
+              No contact method selected. Add WhatsApp or email, or a LinkedIn
+              or website on the next step. Tap Continue again to proceed anyway.
             </ContactNotice>
           )}
 
@@ -426,9 +428,9 @@ export default function OnboardingPage() {
           {error && <p className="text-xs text-brand-red">{error}</p>}
           {contactWarned && !hasAnyContact && (
             <ContactNotice>
-              Members won&apos;t have a way to reach you yet. Add a link below,
-              or go back to add WhatsApp or email. Or tap Finish again to
-              continue anyway.
+              You haven&apos;t added any way for members to reach you. Add
+              WhatsApp or email in the previous step, or a LinkedIn or website
+              here. Tap Finish again to complete anyway.
             </ContactNotice>
           )}
 

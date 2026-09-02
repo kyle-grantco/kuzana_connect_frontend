@@ -147,6 +147,11 @@ export default function EditProfilePage() {
         contact_email: form.contact_email,
       });
       notify("Profile updated.", "success", 3000);
+      // flag so the suggestions section briefly shows an "updating" note and
+      // refetches once the background recompute finishes.
+      try {
+        sessionStorage.setItem("kc_profile_just_updated", "1");
+      } catch {}
       if (memberNo) router.replace(`/members/${slugify(name)}-${memberNo}`);
       else router.replace("/members");
     } catch (err) {
@@ -157,7 +162,7 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto max-w-md md:max-w-xl">
       <button
         onClick={() => router.back()}
         className="mb-4 flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-navy"
@@ -206,30 +211,29 @@ export default function EditProfilePage() {
               What can you offer or help with?
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
-              Skills, experience, services, or products you can offer other
-              members. e.g. advice on getting into retail chains or hiring a
-              sales team, web development, bulk grain supply
+              What you do, or what you can help other members with. e.g. helping
+              founders land their first customers, building websites for small
+              businesses
             </p>
             <ChipInput
               value={form.offerings}
               onChange={(v) => set("offerings", v)}
-              placeholder="Type something you can offer, then press +"
+              placeholder="Add one, then press +"
             />
           </div>
 
           <div>
             <span className="mb-0.5 block text-xs font-medium text-slate-600">
-              What are you looking for?
+              What are you working on or need help with?
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
-              Help, advice, or things you need from other members. e.g. advice
-              on scaling, someone who's cracked distribution, reliable
-              suppliers, new clients
+              What you're trying to do, or where you're stuck. e.g. marketing my
+              product on a small budget, hiring a technical co-founder
             </p>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
-              placeholder="Type something you're looking for, then press +"
+              placeholder="Add one, then press +"
             />
           </div>
 
@@ -238,15 +242,14 @@ export default function EditProfilePage() {
               Short intro (optional)
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
-              A sentence or two about you or your business, and how you could
-              help other members. Up to ~60 words.
+              A line or two about you and what you do.
             </p>
             <textarea
               value={form.intro}
               onChange={update("intro")}
               rows={4}
               maxLength={400}
-              placeholder="e.g. what you do, what you've built, and what you can help others with"
+              placeholder="e.g. I run a solar business installing systems for homes and small shops across central Kenya"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
           </div>

@@ -13,6 +13,7 @@ import { useProfileStatus } from "@/app/store/profileStatusStore";
 import { useSearchStore } from "@/app/store/searchStore";
 import LockedTeaser from "@/app/components/app/LockedTeaser";
 import IndustryChips from "@/app/components/ui/IndustryChips";
+import SuggestionsSections from "@/app/components/app/SuggestionsSections";
 
 const PAGE_SIZE = 20;
 
@@ -77,7 +78,19 @@ export default function DirectoryPage() {
           });
         }
         const fetched = data.results || [];
-        const merged = append ? [...results, ...fetched] : fetched;
+        // Dedupe by member_number: infinite-scroll appends can overlap (the
+        // observer may fire twice, or newly inserted rows shift page offsets),
+        // which would otherwise produce duplicate React keys.
+        let merged;
+        if (append) {
+          const seen = new Set(results.map((m) => m.member_number));
+          merged = [
+            ...results,
+            ...fetched.filter((m) => !seen.has(m.member_number)),
+          ];
+        } else {
+          merged = fetched;
+        }
         const nextAiUsed = !!data.ai_used;
         const nextAiEnabled =
           data.ai_enabled !== undefined ? !!data.ai_enabled : aiEnabled;
@@ -217,42 +230,20 @@ export default function DirectoryPage() {
       <div
         className={locked ? "pointer-events-none select-none opacity-60" : ""}
       >
-        <p className="mb-4 text-sm text-slate-500">
-          Search by what you need or what you offer.
+        {/* Proactive suggestions: the primary value, shown first. */}
+        <SuggestionsSections />
+
+        {/* Directory + search, demoted below the suggestions. */}
+        <div className="mb-1 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-brand-navy">
+            Browse all members
+          </h2>
+        </div>
+        <p className="mb-4 text-xs text-slate-400">
+          Search or browse every member.
         </p>
 
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex gap-1 rounded-lg bg-slate-50 p-1 text-xs sm:text-sm">
-            <button
-              onClick={() => {
-                userChangedRef.current = true;
-                setDirection("offering");
-              }}
-              className={
-                "flex-1 rounded-md px-2 py-1.5 " +
-                (direction === "offering"
-                  ? "bg-brand-blue text-white font-medium"
-                  : "text-slate-500")
-              }
-            >
-              Find what I need
-            </button>
-            <button
-              onClick={() => {
-                userChangedRef.current = true;
-                setDirection("looking_for");
-              }}
-              className={
-                "flex-1 rounded-md px-2 py-1.5 " +
-                (direction === "looking_for"
-                  ? "bg-brand-blue text-white font-medium"
-                  : "text-slate-500")
-              }
-            >
-              Find who needs me
-            </button>
-          </div>
-
           <form
             onSubmit={onSubmit}
             className="mb-3 flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-slate-50 focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/15"
@@ -265,11 +256,7 @@ export default function DirectoryPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder={
-                  direction === "offering"
-                    ? "What are you looking for? e.g. HR services, soya suppliers"
-                    : "What do you offer? e.g. HR services, legal advice"
-                }
+                placeholder="Search members, e.g. HR services, soya suppliers"
                 className="w-full bg-transparent py-2.5 pl-9 pr-9 text-sm focus:outline-none"
               />
               {q && (
@@ -367,7 +354,7 @@ export default function DirectoryPage() {
           <div className="py-12 text-center">
             <p className="text-sm text-slate-400">
               {aiUsed
-                ? "No members found, including a deeper search."
+                ? "No members found, even with a wider search."
                 : "No members found."}
             </p>
             {hasQuery && aiEnabled && (
@@ -377,7 +364,7 @@ export default function DirectoryPage() {
                 className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
               >
                 <Search size={13} />{" "}
-                {deepLoading ? "Searching…" : "Search deeper"}
+                {deepLoading ? "Searching…" : "Try a wider search"}
               </button>
             )}
           </div>
@@ -397,7 +384,7 @@ export default function DirectoryPage() {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-brand-blue hover:border-slate-300 disabled:opacity-50"
                   >
                     <Search size={13} />{" "}
-                    {deepLoading ? "Searching…" : "Search deeper"}
+                    {deepLoading ? "Searching…" : "Try a wider search"}
                   </button>
                 )}
               </div>

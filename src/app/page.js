@@ -3,19 +3,18 @@ import Link from "next/link";
 export const metadata = {
   title: "Kuzana Connect",
   description:
-    "A network where founders find the people they need, a trusted introduction away. A reliable service provider, advice from someone who's done it, an investor, among others.",
+    "Connect finds the founders worth knowing in the Kuzana community for what you're working on, and brings them to you, so your next connection is one message away.",
 };
 
-// Illustrative testimonials — PLACEHOLDER copy. Swap for real member quotes
-// before this matters. Kept clearly generic so nothing misleads in the meantime.
+// Two testimonials. The first is real. The second is a placeholder to be swapped
+// for a real member quote before this goes out.
 const TESTIMONIALS = [
   {
-    initials: "AM",
-    name: "Amina M.",
-    role: "Founder, agri-processing",
-    quote:
-      "I was introduced to an investor through Connect and closed the round I'd been chasing for months. The intro was warm, so the conversation actually happened.",
-    tag: "Met an investor",
+    initials: "WO",
+    name: "Washington Ogol",
+    role: "CEO, Nyumbani Greens",
+    quote: "I won a Ksh 7M grant and Ksh 5M loan through the Kuzana platform.",
+    tag: "Won grant and loan",
   },
   {
     initials: "JK",
@@ -25,38 +24,30 @@ const TESTIMONIALS = [
       "I found a business partner here. Someone already vouched for him, so I trusted the introduction from day one. We've been building together since.",
     tag: "Found a partner",
   },
-  {
-    initials: "WN",
-    name: "Wanjiru N.",
-    role: "Founder, consumer goods",
-    quote:
-      "A growth marketer I connected with fixed how we acquire customers. Sales are up and I stopped guessing. I'd never have reached her cold.",
-    tag: "Met a growth marketer",
-  },
 ];
 
 const STEPS = [
   {
     n: "1",
-    title: "Reach people you couldn't on your own",
-    body: "The service provider, partner, or investor you need is here, and you can actually get to them.",
+    title: "The right members, brought to you",
+    body: "Connect finds the members worth reaching out to for what you're working on, and shows you why each one fits.",
   },
   {
     n: "2",
     title: "Your introductions land",
-    body: "Every member was vouched for by someone already inside, so reaching out isn't a cold message to a stranger. It gets a reply.",
+    body: "Everyone here is part of the Kuzana community, and many are vouched for by members who've worked with them. So reaching out gets a reply, not silence.",
   },
   {
     n: "3",
-    title: "You're findable too",
-    body: "The founders who need what you offer can find you, and reach you with the same trust.",
+    title: "It works both ways",
+    body: "Members who need what you offer find you too, so the right connections happen from both sides.",
   },
 ];
 
 export default function LandingPage() {
   return (
     <main className="min-h-[100svh] bg-white font-sans text-brand-ink antialiased">
-      {/* nav: logo + accessible Login (members land here after logout) */}
+      {/* nav */}
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-6">
         <div className="flex items-center gap-2 text-[1.02rem] font-bold text-brand-navy">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -72,21 +63,43 @@ export default function LandingPage() {
       </nav>
 
       <div className="mx-auto w-full max-w-6xl px-6 pb-8">
-        {/* hero: two columns on large screens — heading left, description right */}
+        {/* hero */}
         <section className="grid items-center gap-8 py-14 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:py-20">
-          <h1 className="text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-[#c8901a] sm:text-[2.7rem] md:text-[3.3rem]">
-            Your next big connection is already here.
-          </h1>
-          <p className="text-[1.05rem] leading-relaxed text-slate-500 md:text-[1.25rem]">
-            A network where founders find the people they need, a trusted
-            introduction away. A reliable service provider, advice from someone
-            who&apos;s done it, an investor, among others.
-          </p>
+          <div>
+            <h1 className="text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-[#c8901a] sm:text-[2.7rem] md:text-[3.3rem]">
+              Find the founder who&apos;s already solved your problem.
+            </h1>
+          </div>
+          <div>
+            <p className="text-[1.05rem] leading-relaxed text-slate-500 md:text-[1.25rem]">
+              Connect finds the people worth knowing for what you&apos;re
+              working on, and brings them to you, so your next connection is one
+              message away.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Link
+                href="/auth/register"
+                className="inline-flex items-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-600"
+              >
+                Join Connect
+              </Link>
+              <Link
+                href="/auth/login"
+                className="inline-flex items-center rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-brand-navy transition-colors hover:border-slate-300"
+              >
+                Log in
+              </Link>
+            </div>
+            <p className="mt-3 text-xs text-slate-400">
+              For Kuzana community members. Use the access code from the
+              WhatsApp group to join.
+            </p>
+          </div>
         </section>
 
-        {/* testimonials: high on the page. This is what does the selling. */}
+        {/* testimonials */}
         <section aria-label="Member stories" className="pb-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {TESTIMONIALS.map((t) => (
               <figure
                 key={t.name}
@@ -96,7 +109,7 @@ export default function LandingPage() {
                   {t.tag}
                 </span>
                 <blockquote className="m-0 text-[0.95rem] leading-relaxed text-brand-navy">
-                  “{t.quote}”
+                  &ldquo;{t.quote}&rdquo;
                 </blockquote>
                 <figcaption className="mt-auto flex items-center gap-2.5">
                   <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-blue text-xs font-bold text-white">
@@ -116,10 +129,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* why it works: value first, subheading separated from description */}
+        {/* how it works */}
         <section className="py-12">
           <h2 className="mb-6 text-[1.4rem] font-bold tracking-tight text-brand-navy md:text-[1.7rem]">
-            Why it works
+            How it works
           </h2>
           <div className="grid gap-7 md:grid-cols-3">
             {STEPS.map((s) => (
@@ -137,17 +150,30 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <p className="mt-10 rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 text-[0.92rem] leading-relaxed text-slate-500">
-            Kuzana Connect is invite-only. If a member sent you a link, open it
-            to join. Already a member?{" "}
+          {/* closing CTA band */}
+          <div className="mt-12 flex flex-col items-start gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-6 py-7 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-base font-semibold text-brand-navy">
+                Already in the Kuzana community? Join Connect
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Use the access code from the WhatsApp group. Already on Connect?{" "}
+                <Link
+                  href="/auth/login"
+                  className="font-semibold text-brand-blue hover:underline"
+                >
+                  Log in
+                </Link>
+                .
+              </p>
+            </div>
             <Link
-              href="/auth/login"
-              className="font-semibold text-brand-blue hover:underline"
+              href="/auth/register"
+              className="inline-flex flex-none items-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-600"
             >
-              Log in
+              Join Connect
             </Link>
-            .
-          </p>
+          </div>
         </section>
 
         <footer className="flex items-center gap-2 pt-4 text-xs text-slate-400">

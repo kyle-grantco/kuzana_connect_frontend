@@ -6,13 +6,15 @@ export async function createInvite({
   invitee_name,
   relationship_type,
   remarks,
-  year_of_engagement,
+  engaged_from,
+  engaged_to,
 }) {
   const res = await authRequest.post("/invites", {
     invitee_name,
     relationship_type,
     remarks,
-    year_of_engagement: year_of_engagement || null,
+    engaged_from,
+    engaged_to: engaged_to || null,
   });
   return res.data;
 }
@@ -53,4 +55,19 @@ export function inviteLink(token) {
 export async function invitedBy(userId) {
   const res = await authRequest.get(`/invites/invited-by/${userId}`);
   return res.data?.inviter || null;
+}
+
+// GET /invites/admin/user/{user_id} -> a member's invites (admin only).
+// Shows all statuses. Returns { items, total, page, page_size }.
+export async function adminListUserInvites(
+  userId,
+  { page = 1, page_size = 20 } = {},
+) {
+  const params = new URLSearchParams();
+  params.set("page", page);
+  params.set("page_size", page_size);
+  const res = await authRequest.get(
+    `/invites/admin/user/${userId}?${params.toString()}`,
+  );
+  return res.data;
 }

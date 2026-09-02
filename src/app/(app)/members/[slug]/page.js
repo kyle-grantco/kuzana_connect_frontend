@@ -13,6 +13,8 @@ import {
   Mail,
   UserPlus,
   UserCheck,
+  Clock,
+  Check,
 } from "lucide-react";
 import Button from "@/app/components/ui/Button";
 import {
@@ -21,13 +23,15 @@ import {
   deleteAccount,
 } from "@/app/lib/profileService";
 import { invitedBy } from "@/app/lib/inviteService";
-import { connectTo } from "@/app/lib/connectionService";
+import ConnectRequestModal from "@/app/components/app/ConnectRequestModal";
+import ReachOutBlock from "@/app/components/app/ReachOutBlock";
 import { logout } from "@/app/lib/logout";
 import { memberNumberFromSlug, slugify } from "@/app/lib/slug";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
 import LockedTeaser from "@/app/components/app/LockedTeaser";
 import EndorsementsSection from "@/app/components/app/EndorsementsSection";
 import InvitesSection from "@/app/components/app/InvitesSection";
+import SuggestionsSections from "@/app/components/app/SuggestionsSections";
 import ConfirmModal from "@/app/components/ui/ConfirmModal";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
@@ -54,6 +58,8 @@ export default function MemberProfilePage() {
   const myMemberNumber = useProfileStatus((s) => s.memberNumber);
   const [member, setMember] = useState(undefined);
   const [isMe, setIsMe] = useState(false);
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
+  const [viewerName, setViewerName] = useState("");
   const [inviter, setInviter] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const invitesRef = useRef(null);
@@ -101,7 +107,12 @@ export default function MemberProfilePage() {
       .catch(() => setMember(null));
     // is this the logged-in user's own profile?
     getMyProfile()
-      .then((me) => setIsMe(me?.user?.member_number === num))
+      .then((me) => {
+        setIsMe(me?.user?.member_number === num);
+        setViewerName(me?.user?.full_name || "");
+        const role = me?.user?.role;
+        setViewerIsAdmin(role === "admin" || role === "super_admin");
+      })
       .catch(() => {});
   }, [slug]);
 
@@ -118,30 +129,8 @@ export default function MemberProfilePage() {
     }
   }
 
-  async function handleConnect() {
-    if (!member?.user_id) return;
-    setConnecting(true);
-    try {
-      const res = await connectTo(member.user_id);
-      setContacts(
-        res.contacts || { whatsapp_number: null, email: null, linkedin: null },
-      );
-      setConnected(true);
-      setConnectOpen(false);
-      notify(
-        "Connected. Their contact details are now visible.",
-        "success",
-        3000,
-      );
-    } catch (err) {
-      const msg =
-        err.response?.data?.detail || "Couldn't connect. Please try again.";
-      notify(msg, "error", 3500);
-      setConnectOpen(false);
-    } finally {
-      setConnecting(false);
-    }
-  }
+  // Connect now opens the request composer. Contacts are revealed only after
+  // the recipient accepts (handled server-side; this page reflects it on reload).
 
   if (member === undefined) {
     return <p className="py-16 text-center text-sm text-slate-400">Loading…</p>;
@@ -228,6 +217,13 @@ export default function MemberProfilePage() {
               />
             </div>
           )}
+
+          {/* Admin: who this (incomplete) member has invited */}
+          {!isMe && viewerIsAdmin && member.user_id && (
+            <div className="mt-5">
+              <InvitesSection userId={member.user_id} readOnly />
+            </div>
+          )}
         </div>
       </>
     );
@@ -287,6 +283,11 @@ export default function MemberProfilePage() {
                 <MapPin size={12} /> {member.location}
               </p>
             )}
+            {connected && !isMe && !member.is_self && (
+              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700">
+                <Check size={11} /> Connected
+              </span>
+            )}
 
             {member.primary_link && (
               <a
@@ -306,68 +307,40 @@ export default function MemberProfilePage() {
               const hasAnyChannel =
                 member.has_whatsapp || member.has_email || member.has_linkedin;
 
-              // Own profile or already connected -> show the real contacts.
-              if (isMe || connected) {
-                const cwa = contacts.whatsapp_number
-                  ? `https://wa.me/${contacts.whatsapp_number.replace(/[^\d]/g, "")}`
-                  : null;
+              // Own profile or already connected -> reach-out block.
+              const ownProfile = isMe || member.is_self;
+              if (ownProfile || connected) {
                 return (
-                  <>
-                    {contacts.linkedin && (
-                      <a
-                        href={ensureUrl(contacts.linkedin)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm text-brand-blue hover:border-slate-300"
-                      >
-                        <LinkIcon size={14} /> LinkedIn
-                      </a>
-                    )}
-                    {contacts.email && (
-                      <a
-                        href={`mailto:${contacts.email}`}
-                        className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm text-brand-blue hover:border-slate-300"
-                      >
-                        <Mail size={14} /> {contacts.email}
-                      </a>
-                    )}
-                    {cwa && (
-                      <a
-                        href={cwa}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 block"
-                      >
-                        <Button>
-                          <span className="flex items-center gap-2">
-                            <MessageCircle size={16} /> Contact on WhatsApp
-                          </span>
-                        </Button>
-                      </a>
-                    )}
-                    {isMe && !hasAnyChannel && !member.primary_link && (
-                      <p className="mt-4 text-xs text-slate-400">
-                        You haven&apos;t shared a contact channel.
-                      </p>
-                    )}
-                  </>
+                  <ReachOutBlock
+                    member={member}
+                    contacts={contacts}
+                    isMe={ownProfile}
+                    viewerName={viewerName}
+                  />
                 );
               }
 
-              // Not connected: show a Connect CTA if the member has any gated
-              // channel; otherwise note there's no way to reach them yet.
-              if (!hasAnyChannel) {
-                return !member.primary_link ? (
-                  <p className="mt-4 text-xs text-slate-400">
-                    This member hasn&apos;t shared a contact channel.
-                  </p>
-                ) : null;
+              // Not connected. If a request is already pending, show a
+              // disabled state and never open the compose form again.
+              if (member.request_status === "pending") {
+                return (
+                  <div className="mt-4">
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-medium text-slate-400">
+                      <Clock size={15} /> Request pending
+                    </div>
+                    <p className="mt-2 text-center text-[11px] text-slate-400">
+                      Waiting for {member.full_name?.split(" ")[0]} to respond.
+                    </p>
+                  </div>
+                );
               }
+              // Otherwise show Connect. (Accept-time handles the case where the
+              // recipient has no contact channel — we don't block connecting.)
               return (
                 <div className="mt-4">
                   <Button onClick={() => setConnectOpen(true)}>
                     <span className="flex items-center gap-2">
-                      <UserCheck size={16} /> Connect to see contact details
+                      <UserCheck size={16} /> Connect
                     </span>
                   </Button>
                 </div>
@@ -436,6 +409,27 @@ export default function MemberProfilePage() {
         </div>
       </div>
 
+      {/* Suggestions — own profile only. Placed right after profile info so a
+          member sees who to connect with the moment they finish/edit (the aha
+          moment), before endorsements/invites. Reuses the directory component in
+          compact mode. */}
+      {isMe && (
+        <div className="mt-5">
+          <SuggestionsSections compact />
+        </div>
+      )}
+
+      {/* Admin viewing another member: their suggestions (match-quality debug).
+          Shows the full unfiltered result the engine produced for this member. */}
+      {!isMe && viewerIsAdmin && member.user_id && (
+        <div className="mt-5">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-yellow-text">
+            Member suggestions (admin view)
+          </div>
+          <SuggestionsSections userId={member.user_id} admin compact />
+        </div>
+      )}
+
       {/* Endorsements — trust signal, after knowing what the member does.
           Needs the owner's user_id (member.user_id). */}
       {member.user_id && (
@@ -448,6 +442,13 @@ export default function MemberProfilePage() {
       {isMe && (
         <div id="invites-section" className="mt-5 scroll-mt-20">
           <InvitesSection ref={invitesRef} />
+        </div>
+      )}
+
+      {/* Admin viewing another member: read-only view of who they invited */}
+      {!isMe && viewerIsAdmin && member.user_id && (
+        <div className="mt-5">
+          <InvitesSection userId={member.user_id} readOnly />
         </div>
       )}
 
@@ -471,15 +472,13 @@ export default function MemberProfilePage() {
         </div>
       )}
 
-      <ConfirmModal
+      <ConnectRequestModal
         open={connectOpen}
-        category="confirm"
-        title={`Connect with ${member.full_name || "this member"}?`}
-        message="You'll see their contact details so you can reach out."
-        confirmLabel="Connect"
-        onConfirm={handleConnect}
+        member={member}
         onClose={() => setConnectOpen(false)}
-        loading={connecting}
+        onSent={() =>
+          setMember((m) => (m ? { ...m, request_status: "pending" } : m))
+        }
       />
 
       <ConfirmModal

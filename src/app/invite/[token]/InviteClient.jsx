@@ -91,7 +91,7 @@ export default function InviteClient({ token }) {
                 : "You've been invited to join"}
             </h1>
             <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-slate-500">
-              Kuzana Connect, a trusted network of entrepreneurs.
+              Kuzana Connect, a trusted network of founders.
             </p>
 
             <div className="mt-6">

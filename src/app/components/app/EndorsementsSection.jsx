@@ -28,6 +28,7 @@ import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import ConfirmModal from "@/app/components/ui/ConfirmModal";
 import VouchForm from "@/app/components/app/VouchForm";
+import { engagementPeriod } from "@/app/lib/vouch";
 
 const PAGE_SIZE = 10;
 
@@ -268,11 +269,6 @@ export default function EndorsementsSection({
                     : "border-slate-200 bg-white")
                 }
               >
-                {isOwn && !readOnly && (
-                  <span className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brand-blue-700">
-                    Your endorsement
-                  </span>
-                )}
                 <VouchRow
                   row={row}
                   showPerson
@@ -340,12 +336,30 @@ export default function EndorsementsSection({
 // One endorsement's content: relationship, remarks, year, and optionally the
 // linked person (endorser or endorsed depending on the toggle).
 function VouchRow({ row, showPerson, onPersonClick }) {
+  // Testimonial format: the vouch message leads, then a compact meta line
+  // (relationship + period, structured, not a built sentence so it never reads
+  // as "this person IS an employee"), then the endorser's identity at the
+  // bottom (avatar + name + title). This keeps the relationship clearly ABOUT
+  // the connection, not mistaken for the endorser's own role.
+  const period = engagementPeriod(row.engaged_from, row.engaged_to);
   return (
-    <div>
+    <div className="flex h-full flex-col">
+      {/* message leads */}
+      <p className="text-sm leading-relaxed text-brand-navy">“{row.remarks}”</p>
+
+      {/* relationship · period — structured meta, clearly about the relationship */}
+      <div className="mt-2 text-[11px] text-slate-400">
+        <span className="font-medium text-slate-500">
+          {row.relationship_type}
+        </span>
+        {period ? <span> · {period}</span> : null}
+      </div>
+
+      {/* endorser identity at the bottom */}
       {showPerson && row.person && (
         <button
           onClick={onPersonClick}
-          className="mb-1 flex items-center gap-2 text-left"
+          className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3 text-left"
         >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-blue text-[11px] font-medium text-white">
             {row.person.photo_url ? (
@@ -359,29 +373,18 @@ function VouchRow({ row, showPerson, onPersonClick }) {
               (row.person.full_name || "?").charAt(0).toUpperCase()
             )}
           </span>
-          <span>
-            <span className="block text-sm font-medium text-brand-navy hover:text-brand-blue">
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-brand-navy hover:text-brand-blue">
               {row.person.full_name || "Member"}
             </span>
             {row.person.title && (
-              <span className="block text-[11px] text-slate-400">
+              <span className="block truncate text-[11px] text-slate-400">
                 {row.person.title}
               </span>
             )}
           </span>
         </button>
       )}
-      <div className="flex flex-wrap items-center gap-2 text-[11px]">
-        <span className="rounded-full bg-brand-yellow-100 px-2 py-0.5 text-brand-navy">
-          {row.relationship_type}
-        </span>
-        {row.year_of_engagement && (
-          <span className="text-slate-400">{row.year_of_engagement}</span>
-        )}
-      </div>
-      <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-        {row.remarks}
-      </p>
     </div>
   );
 }

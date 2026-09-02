@@ -15,25 +15,37 @@ export async function checkInviteToken(token) {
 }
 
 // POST /auth/register -> creates account + auto-sends OTP.
-// invite_token is required by the backend (invite-only entry).
+// Entry needs EITHER an invite_token OR the community_code (invite bypasses code).
 export async function register({
   full_name,
   whatsapp_number,
   email,
   invite_token,
+  community_code,
 }) {
   const res = await publicRequest.post("/auth/register", {
     full_name,
     whatsapp_number,
     email,
     invite_token,
+    community_code,
   });
   return res.data;
 }
 
+// POST /auth/verify_code -> validate ONLY the community access code (gates the
+// first registration step before collecting phone/OTP). Throws on a wrong code.
+export async function verifyCommunityCode(community_code) {
+  const res = await publicRequest.post("/auth/verify_code", { community_code });
+  return res.data;
+}
+
 // POST /auth/send_otp -> send/resend OTP to an existing account (login + resend)
-export async function sendOtp(whatsapp_number) {
-  const res = await publicRequest.post("/auth/send_otp", { whatsapp_number });
+export async function sendOtp(whatsapp_number, channel = "whatsapp") {
+  const res = await publicRequest.post("/auth/send_otp", {
+    whatsapp_number,
+    channel,
+  });
   return res.data;
 }
 

@@ -3,7 +3,7 @@ import { authRequest } from "./api";
 
 // GET /endorsements/user/{user_id}?direction=received|given -> paginated list.
 // Returns { items, total, page, page_size }. Each item: { id, relationship_type,
-// remarks, year_of_engagement, created_at, updated_at, person, can_edit }.
+// remarks, engaged_from, engaged_to, created_at, updated_at, person, can_edit }.
 export async function listEndorsements(
   userId,
   { direction = "received", page = 1, page_size = 10 } = {},
@@ -31,13 +31,15 @@ export async function createEndorsement({
   endorsed_user_id,
   relationship_type,
   remarks,
-  year_of_engagement,
+  engaged_from,
+  engaged_to,
 }) {
   const res = await authRequest.post("/endorsements", {
     endorsed_user_id,
     relationship_type,
     remarks,
-    year_of_engagement: year_of_engagement || null,
+    engaged_from,
+    engaged_to: engaged_to || null,
   });
   return res.data;
 }

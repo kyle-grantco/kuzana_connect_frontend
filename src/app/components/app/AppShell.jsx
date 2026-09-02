@@ -2,15 +2,22 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react";
+import {
+  ChevronDown,
+  User,
+  UserPlus,
+  LogOut,
+  LayoutDashboard,
+} from "lucide-react";
 import { useAuthStore } from "@/app/store/authStore";
 import { logout } from "@/app/lib/logout";
 import { getMyProfile } from "@/app/lib/profileService";
 import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import NotificationBell from "@/app/components/app/NotificationBell";
 
-// Authed app shell: top bar (logo + account menu) + centered content area.
-// Wrap the directory, profile view, etc. with this.
+// Authed app shell: top bar (logo + notifications + account menu) + centered
+// content area. Wrap the directory, profile view, etc. with this.
 export default function AppShell({ children }) {
   const router = useRouter();
   const { notify } = useNotificationStore();
@@ -62,61 +69,75 @@ export default function AppShell({ children }) {
             </span>
           </button>
 
-          {/* account menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2 hover:border-slate-300"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-blue text-[11px] font-medium text-white">
-                {initials(name)}
-              </span>
-              <ChevronDown size={14} className="text-slate-400" />
-            </button>
+          {/* right side: notifications + account */}
+          <div className="flex items-center gap-3">
+            <NotificationBell />
 
-            {open && (
-              <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                {name && (
-                  <div className="border-b border-slate-100 px-4 py-3">
-                    <div className="text-sm font-medium text-brand-navy">
-                      {name}
-                    </div>
-                    {memberNo != null && (
-                      <div className="text-[11px] text-slate-400">
-                        Member #{memberNo}
+            {/* account menu */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2 hover:border-slate-300"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-blue text-[11px] font-medium text-white">
+                  {initials(name)}
+                </span>
+                <ChevronDown size={14} className="text-slate-400" />
+              </button>
+
+              {open && (
+                <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                  {name && (
+                    <div className="border-b border-slate-100 px-4 py-3">
+                      <div className="text-sm font-medium text-brand-navy">
+                        {name}
                       </div>
-                    )}
-                  </div>
-                )}
-                <button
-                  onClick={goToMyProfile}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <User size={15} /> My profile
-                </button>
-                {(me?.user?.role === "admin" ||
-                  me?.user?.role === "super_admin") && (
+                      {memberNo != null && (
+                        <div className="text-[11px] text-slate-400">
+                          Member #{memberNo}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    onClick={goToMyProfile}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    <User size={15} /> My profile
+                  </button>
                   <button
                     onClick={() => {
                       setOpen(false);
-                      router.push("/admin");
+                      router.push("/connections/requests");
                     }}
                     className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
                   >
-                    <LayoutDashboard size={15} /> Admin dashboard
+                    <UserPlus size={15} /> Connection requests
                   </button>
-                )}
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    logout();
-                  }}
-                  className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <LogOut size={15} /> Log out
-                </button>
-              </div>
-            )}
+                  {(me?.user?.role === "admin" ||
+                    me?.user?.role === "super_admin") && (
+                    <button
+                      onClick={() => {
+                        setOpen(false);
+                        router.push("/admin");
+                      }}
+                      className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                      <LayoutDashboard size={15} /> Admin dashboard
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      logout();
+                    }}
+                    className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    <LogOut size={15} /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
