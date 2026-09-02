@@ -17,10 +17,23 @@ export const publicRequest = axios.create({
   withCredentials: true,
 });
 
-// Inject CSRF token from the auth store on every authenticated request
+// Read the readable CSRF cookie as a fallback, so a request never goes out with
+// an empty CSRF header just because the in-memory store hasn't hydrated yet
+// (that empty header 401s -> refresh -> retry, multiplying requests).
+function csrfFromCookie() {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|;\s*)csrf_access_token=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+// Inject CSRF token (store first, cookie fallback) on every authenticated request
 authRequest.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().csrfToken;
+    let token = useAuthStore.getState().csrfToken;
+    if (!token) {
+      token = csrfFromCookie();
+      if (token) useAuthStore.getState().setCsrfToken(token);
+    }
     if (token) config.headers["X-CSRF-TOKEN"] = token;
     return config;
   },
@@ -45,7 +58,9 @@ function runRefresh() {
   return refreshPromise;
 }
 
-// On 401 — attempt one (shared) refresh, retry the original request, else fail
+// On 401 — attempt one (shared) refresh, retry the original request, else fail.
+// A CSRF-mismatch 401 that is NOT token expiry would loop, so we only refresh
+// once per request (_retry guard) and give up cleanly after.
 authRequest.interceptors.response.use(
   (response) => response,
   async (error) => {
