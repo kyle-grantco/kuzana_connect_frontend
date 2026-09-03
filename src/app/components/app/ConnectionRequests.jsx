@@ -51,7 +51,11 @@ export default function ConnectionRequests() {
     try {
       if (action === "accept") {
         const res = await acceptConnectionRequest(id);
-        notify(`You're now connected with ${name}.`, "success", 3000);
+        notify(
+          `You're connected with ${name}. They'll be in touch, or reach out from their profile.`,
+          "success",
+          4000,
+        );
         if (res?.i_have_no_contact) {
           notify(
             "Add your WhatsApp or email in your profile so they can reach you.",
@@ -162,7 +166,17 @@ export default function ConnectionRequests() {
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-3 flex justify-end">
+                  <div className="mt-3 flex items-center justify-between">
+                    {r.status === "accepted" ? (
+                      <button
+                        onClick={() => openProfile(r.requester)}
+                        className="text-xs font-medium text-brand-blue hover:text-brand-blue-600"
+                      >
+                        View profile to reach out
+                      </button>
+                    ) : (
+                      <span />
+                    )}
                     <StatusPill status={r.status} />
                   </div>
                 )}
