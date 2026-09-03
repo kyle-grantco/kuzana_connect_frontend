@@ -86,7 +86,7 @@ export default function ReachOutBlock({
   if (isMe) {
     return (
       <div className="mt-3 space-y-2">
-        <p className="text-[11px] text-slate-400">
+        <p className="text-center text-[11px] text-slate-400">
           How connected members can reach you:
         </p>
         {contacts?.whatsapp_number && (

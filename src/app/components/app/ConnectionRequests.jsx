@@ -52,7 +52,7 @@ export default function ConnectionRequests() {
       if (action === "accept") {
         const res = await acceptConnectionRequest(id);
         notify(
-          `You're connected with ${name}. They'll be in touch, or reach out from their profile.`,
+          `You're connected with ${name}. We've emailed you both an intro, or reach out from their profile.`,
           "success",
           4000,
         );

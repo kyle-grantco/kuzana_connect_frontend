@@ -12,6 +12,7 @@ import {
   getRequestQuota,
 } from "@/app/lib/connectionRequestService";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import { useConnectionQuota } from "@/app/store/connectionQuotaStore";
 
 const MAX = 500;
 
@@ -23,6 +24,7 @@ export default function ConnectRequestModal({
   onSent, // called after a successful send
 }) {
   const { notify } = useNotificationStore();
+  const bumpQuota = useConnectionQuota((s) => s.bump);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [quota, setQuota] = useState(null);
@@ -49,6 +51,7 @@ export default function ConnectRequestModal({
     setSending(true);
     try {
       await sendConnectionRequest(member.user_id, msg);
+      bumpQuota(); // refresh the nav quota indicator
       notify(
         `Request sent to ${member.full_name}. You'll be notified when they respond.`,
         "success",
@@ -96,7 +99,7 @@ export default function ConnectRequestModal({
         <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
           <span>
             {remaining != null &&
-              `${remaining} request${remaining === 1 ? "" : "s"} left today`}
+              `${remaining} request${remaining === 1 ? "" : "s"} left this week`}
           </span>
           <span>
             {message.length}/{MAX}
@@ -110,7 +113,7 @@ export default function ConnectRequestModal({
         >
           <Send size={15} />
           {noneLeft
-            ? "You can send one request a day"
+            ? "No requests left this week"
             : sending
               ? "Sending…"
               : "Send request"}

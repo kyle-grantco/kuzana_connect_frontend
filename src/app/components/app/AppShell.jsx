@@ -15,6 +15,7 @@ import { getMyProfile } from "@/app/lib/profileService";
 import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 import NotificationBell from "@/app/components/app/NotificationBell";
+import ConnectionQuota from "@/app/components/app/ConnectionQuota";
 
 // Authed app shell: top bar (logo + notifications + account menu) + centered
 // content area. Wrap the directory, profile view, etc. with this.
@@ -71,6 +72,7 @@ export default function AppShell({ children }) {
 
           {/* right side: notifications + account */}
           <div className="flex items-center gap-3">
+            <ConnectionQuota />
             <NotificationBell />
 
             {/* account menu */}
