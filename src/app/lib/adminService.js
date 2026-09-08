@@ -16,6 +16,20 @@ export async function listUsers({ status, q, page = 1, size = 20 } = {}) {
   return res.data; // { total, page, size, results }
 }
 
+// GET /admin/connections -> { total, page, size, results:[{requester, recipient, status, ...}] }
+export async function listConnectionRequests({
+  status,
+  page = 1,
+  size = 25,
+} = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  params.set("page", page);
+  params.set("size", size);
+  const res = await authRequest.get(`/admin/connections?${params.toString()}`);
+  return res.data;
+}
+
 export async function adminViewUser(memberNumber) {
   const res = await authRequest.get(`/admin/users/${memberNumber}`);
   return res.data; // { user, profile }

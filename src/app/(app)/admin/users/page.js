@@ -180,6 +180,7 @@ export default function AdminMembersPage() {
                   <th className="px-4 py-2.5">Status</th>
                   <th className="px-4 py-2.5">Profile</th>
                   <th className="px-4 py-2.5">Invites</th>
+                  <th className="px-4 py-2.5">Connections</th>
                   <th className="px-4 py-2.5">Role</th>
                   <th className="px-4 py-2.5">View</th>
                   {isSuper && <th className="px-4 py-2.5">Actions</th>}
@@ -233,6 +234,13 @@ export default function AdminMembersPage() {
                             /{u.invites_made} joined
                           </span>
                         </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {u.connections ? (
+                        <span className="text-slate-600">{u.connections}</span>
                       ) : (
                         <span className="text-slate-300">—</span>
                       )}

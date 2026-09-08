@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     p = m.profiles,
     s = m.search,
     inv = m.invites,
-    conn = m.connections;
+    req = m.connection_requests;
 
   return (
     <div className="space-y-8">
@@ -114,6 +114,39 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* ── Connection activity: requests + outcomes in one clean view ───── */}
+      {req && (
+        <section>
+          <h2 className="mb-1 text-sm font-semibold text-slate-500">
+            Connection activity
+          </h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Are members trying to connect? Requests sent and how they resolve.
+            An accepted request is a connection. Acceptance rate is accepted out
+            of those acted on.
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat
+              label="Requests sent"
+              value={req.total}
+              sub="all connection requests"
+            />
+            <Stat
+              label="Accepted"
+              value={req.accepted}
+              pct={req.acceptance_rate}
+              sub="became connections"
+            />
+            <Stat
+              label="Pending"
+              value={req.pending}
+              sub="awaiting a response"
+            />
+            <Stat label="Declined" value={req.declined} sub="turned down" />
+          </div>
+        </section>
+      )}
+
       {/* ── Invites: the growth loop ─────────────────────────────────────── */}
       {inv && (
         <section>
@@ -144,36 +177,6 @@ export default function AdminDashboard() {
               label="Active inviters"
               value={inv.active_inviters}
               sub="members who invited ≥ 1"
-            />
-          </div>
-        </section>
-      )}
-
-      {/* ── Connections: the core value metric ───────────────────────────── */}
-      {conn && (
-        <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-500">
-            Connections
-          </h2>
-          <p className="mb-3 text-xs text-slate-400">
-            When a member connects with another to reveal their contact and
-            reach out. The core measure of connections made.
-          </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat
-              label="Total connections"
-              value={conn.total}
-              sub="times a member connected with another"
-            />
-            <Stat
-              label="Active connectors"
-              value={conn.active_connectors}
-              sub="members who reached out ≥ 1"
-            />
-            <Stat
-              label="Members reached"
-              value={conn.reached_members}
-              sub="members connected with ≥ 1 time"
             />
           </div>
         </section>

@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, LayoutDashboard, Users as UsersIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  LayoutDashboard,
+  Users as UsersIcon,
+  Link2,
+} from "lucide-react";
 import Link from "next/link";
 import { getMyProfile } from "@/app/lib/profileService";
 
@@ -58,6 +63,12 @@ export default function AdminLayout({ children }) {
             className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
           >
             <UsersIcon size={14} /> Members
+          </Link>
+          <Link
+            href="/admin/connections"
+            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
+          >
+            <Link2 size={14} /> Connections
           </Link>
         </div>
         <button
