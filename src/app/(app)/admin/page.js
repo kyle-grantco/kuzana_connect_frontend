@@ -122,8 +122,8 @@ export default function AdminDashboard() {
           </h2>
           <p className="mb-3 text-xs text-slate-400">
             Are members trying to connect? Requests sent and how they resolve.
-            An accepted request is a connection. Acceptance rate is accepted out
-            of those acted on.
+            An accepted request is a connection. The percentage is accepted out
+            of all requests sent, so pending ones count against it.
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
               label="Accepted"
               value={req.accepted}
               pct={req.acceptance_rate}
-              sub="became connections"
+              sub="of all sent (became connections)"
             />
             <Stat
               label="Pending"
