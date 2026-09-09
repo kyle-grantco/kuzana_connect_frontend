@@ -26,6 +26,19 @@ function csrfFromCookie() {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+// Best-effort clear of the readable CSRF cookie. On a hard auth failure the
+// access cookie is expired/invalid but its readable CSRF twin may linger; if we
+// don't clear it, the store re-hydrates a dead token and the NEXT request goes
+// out with stale CSRF and fails — which is why an action (like requesting an
+// OTP) would fail once and only work on the second try. Clearing it here makes
+// the first post-logout request clean.
+function clearCsrfCookie() {
+  if (typeof document === "undefined") return;
+  // expire it on the common paths it may have been set on
+  const expire = "csrf_access_token=; Max-Age=0; path=/;";
+  document.cookie = expire;
+}
+
 // Inject CSRF token (store first, cookie fallback) on every authenticated request
 authRequest.interceptors.request.use(
   (config) => {
@@ -111,11 +124,25 @@ let authFailureHandled = false;
 const handleAuthFailure = () => {
   if (authFailureHandled) return;
   authFailureHandled = true;
+
+  // Clean up stale auth state so the login page starts fresh. Without this, the
+  // dead CSRF cookie lingers and re-hydrates into the store, so the first action
+  // on the login page (e.g. requesting an OTP) goes out with stale state and
+  // fails — only working on a second try. Clearing store + cookie fixes that.
+  try {
+    useAuthStore.getState().clearAuth();
+    clearCsrfCookie();
+  } catch {
+    /* ignore */
+  }
+
   useNotificationStore
     .getState()
     .notify("Session expired. Please sign in again.", "warning", 0);
   if (typeof window !== "undefined") {
     setTimeout(() => {
+      // full navigation to login resets the module state (and thus the
+      // authFailureHandled guard) so future sessions behave normally.
       window.location.href = "/auth/login";
     }, 1200);
   }

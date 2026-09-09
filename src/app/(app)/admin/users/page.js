@@ -8,7 +8,9 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  MoreVertical,
 } from "lucide-react";
+import { useRef } from "react";
 import {
   listUsers,
   suspendUser,
@@ -177,13 +179,13 @@ export default function AdminMembersPage() {
                 <tr>
                   <th className="px-4 py-2.5">#</th>
                   <th className="px-4 py-2.5">Name</th>
+                  <th className="px-4 py-2.5">Email</th>
+                  <th className="px-4 py-2.5">Phone</th>
                   <th className="px-4 py-2.5">Status</th>
                   <th className="px-4 py-2.5">Profile</th>
-                  <th className="px-4 py-2.5">Invites</th>
                   <th className="px-4 py-2.5">Connections</th>
-                  <th className="px-4 py-2.5">Role</th>
-                  <th className="px-4 py-2.5">View</th>
-                  {isSuper && <th className="px-4 py-2.5">Actions</th>}
+                  <th className="px-4 py-2.5">Invites</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -208,9 +210,12 @@ export default function AdminMembersPage() {
                       >
                         {u.full_name}
                       </button>
-                      <div className="text-[11px] text-slate-400">
-                        {u.whatsapp_number}
-                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-slate-500">
+                      {u.email || "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-slate-500">
+                      {u.whatsapp_number || "—"}
                     </td>
                     <td className="px-4 py-2.5">
                       <span
@@ -227,6 +232,13 @@ export default function AdminMembersPage() {
                       {u.completion_status || "—"}
                     </td>
                     <td className="px-4 py-2.5 text-xs">
+                      {u.connections ? (
+                        <span className="text-slate-600">{u.connections}</span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
                       {u.invites_made ? (
                         <span className="text-slate-600">
                           {u.invites_joined}
@@ -238,113 +250,48 @@ export default function AdminMembersPage() {
                         <span className="text-slate-300">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-xs">
-                      {u.connections ? (
-                        <span className="text-slate-600">{u.connections}</span>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
-                    </td>
                     <td className="px-4 py-2.5">
-                      {isSuper ? (
-                        <select
-                          value={u.role}
-                          onChange={(e) => {
-                            const newRole = e.target.value;
-                            if (
-                              confirm(
-                                `Change ${u.full_name}'s role to "${newRole}"?`,
-                              )
-                            ) {
-                              act(
-                                () => setUserRole(u.member_number, newRole),
-                                u.member_number,
-                                "Role updated.",
-                              );
-                            } else {
-                              e.target.value = u.role;
-                            }
-                          }}
-                          className="rounded border border-slate-200 bg-white px-2 py-1 text-xs"
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() =>
+                            u.member_number &&
+                            router.push(
+                              `/members/${slugify(u.full_name)}-${u.member_number}?from=admin`,
+                            )
+                          }
+                          disabled={!u.member_number}
+                          aria-label="View profile"
+                          title="View profile"
+                          className="rounded-md border border-slate-200 p-1.5 text-slate-500 hover:border-slate-300 disabled:opacity-40"
                         >
-                          <option value="user">user</option>
-                          <option value="admin">admin</option>
-                          <option value="super_admin">super_admin</option>
-                        </select>
-                      ) : (
-                        <span className="text-xs text-slate-500">{u.role}</span>
-                      )}
+                          <Eye size={15} />
+                        </button>
+                        <RowMenu
+                          user={u}
+                          isSuper={isSuper}
+                          onRole={(newRole) =>
+                            act(
+                              () => setUserRole(u.member_number, newRole),
+                              u.member_number,
+                              "Role updated.",
+                            )
+                          }
+                          onSuspend={() =>
+                            act(suspendUser, u.member_number, "User suspended.")
+                          }
+                          onActivate={() =>
+                            act(
+                              activateUser,
+                              u.member_number,
+                              "User reactivated.",
+                            )
+                          }
+                          onDelete={() =>
+                            act(deleteUser, u.member_number, "User deleted.")
+                          }
+                        />
+                      </div>
                     </td>
-                    <td className="px-4 py-2.5">
-                      <button
-                        onClick={() =>
-                          u.member_number &&
-                          router.push(
-                            `/members/${slugify(u.full_name)}-${u.member_number}?from=admin`,
-                          )
-                        }
-                        disabled={!u.member_number}
-                        className="flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-[11px] text-brand-blue hover:border-slate-300 disabled:opacity-40"
-                      >
-                        <Eye size={12} /> View
-                      </button>
-                    </td>
-                    {isSuper && (
-                      <td className="px-4 py-2.5">
-                        <div className="flex gap-2">
-                          {u.status !== "suspended" &&
-                            u.status !== "deleted" && (
-                              <button
-                                onClick={() => {
-                                  if (
-                                    confirm(
-                                      `Suspend ${u.full_name}? They won't be able to log in.`,
-                                    )
-                                  )
-                                    act(
-                                      suspendUser,
-                                      u.member_number,
-                                      "User suspended.",
-                                    );
-                                }}
-                                className="rounded border border-orange-200 px-2 py-1 text-[11px] text-orange-700 hover:bg-orange-50"
-                              >
-                                Suspend
-                              </button>
-                            )}
-                          {u.status !== "active" && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Reactivate ${u.full_name}?`))
-                                  act(
-                                    activateUser,
-                                    u.member_number,
-                                    "User reactivated.",
-                                  );
-                              }}
-                              className="rounded border border-green-200 px-2 py-1 text-[11px] text-green-700 hover:bg-green-50"
-                            >
-                              Activate
-                            </button>
-                          )}
-                          {u.status !== "deleted" && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete ${u.full_name}?`))
-                                  act(
-                                    deleteUser,
-                                    u.member_number,
-                                    "User deleted.",
-                                  );
-                              }}
-                              className="rounded border border-red-200 px-2 py-1 text-[11px] text-red-700 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
@@ -371,6 +318,121 @@ export default function AdminMembersPage() {
             </button>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+// Per-row action menu (⋮): holds the state-changing controls — role selector
+// and suspend/activate/delete. View-profile is a direct button in the row now.
+function RowMenu({ user, isSuper, onRole, onSuspend, onActivate, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function onClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const canSuspend =
+    isSuper && user.status !== "suspended" && user.status !== "deleted";
+  const canActivate = isSuper && user.status !== "active";
+  const canDelete = isSuper && user.status !== "deleted";
+
+  // Nothing actionable for non-super admins now that View lives in the row.
+  if (!isSuper) return null;
+
+  return (
+    <div className="relative inline-block text-left" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Actions"
+        className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:border-slate-300"
+      >
+        <MoreVertical size={15} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-lg">
+          <div className="px-3 py-2">
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              Role
+            </label>
+            <select
+              value={user.role}
+              onChange={(e) => {
+                const newRole = e.target.value;
+                if (newRole === user.role) return;
+                if (
+                  confirm(`Change ${user.full_name}'s role to "${newRole}"?`)
+                ) {
+                  setOpen(false);
+                  onRole(newRole);
+                } else {
+                  e.target.value = user.role;
+                }
+              }}
+              className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs"
+            >
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+              <option value="super_admin">super_admin</option>
+            </select>
+          </div>
+
+          {(canSuspend || canActivate || canDelete) && (
+            <div className="border-t border-slate-100">
+              {canSuspend && (
+                <button
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `Suspend ${user.full_name}? They won't be able to log in.`,
+                      )
+                    ) {
+                      setOpen(false);
+                      onSuspend();
+                    }
+                  }}
+                  className="flex w-full items-center px-3 py-2 text-sm text-orange-700 hover:bg-orange-50"
+                >
+                  Suspend
+                </button>
+              )}
+              {canActivate && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Reactivate ${user.full_name}?`)) {
+                      setOpen(false);
+                      onActivate();
+                    }
+                  }}
+                  className="flex w-full items-center px-3 py-2 text-sm text-green-700 hover:bg-green-50"
+                >
+                  Reactivate
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => {
+                    if (
+                      confirm(`Delete ${user.full_name}? This can't be undone.`)
+                    ) {
+                      setOpen(false);
+                      onDelete();
+                    }
+                  }}
+                  className="flex w-full items-center px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
