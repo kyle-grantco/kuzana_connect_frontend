@@ -5,12 +5,12 @@
 // token, calls the backend to opt the member out, and shows the result. Living
 // on the frontend (not linking straight to the API) keeps it same-origin.
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { unsubscribeByToken } from "@/app/lib/commsService";
 
-export default function UnsubscribePage() {
+function UnsubscribeInner() {
   const params = useSearchParams();
   const token = params.get("token");
   const [state, setState] = useState("working"); // working | done | invalid
@@ -80,5 +80,19 @@ export default function UnsubscribePage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function UnsubscribePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-brand-yellow-50 px-4">
+          <p className="text-sm text-slate-500">Loading…</p>
+        </main>
+      }
+    >
+      <UnsubscribeInner />
+    </Suspense>
   );
 }
