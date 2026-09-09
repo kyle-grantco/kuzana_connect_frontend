@@ -45,7 +45,7 @@ export default function EmailPrefToggle() {
   const on = !optOut; // "on" = receiving updates
 
   return (
-    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="min-w-0">
         <div className="text-sm font-medium text-brand-navy">Update emails</div>
         <p className="mt-0.5 text-xs text-slate-400">
@@ -60,14 +60,16 @@ export default function EmailPrefToggle() {
         onClick={toggle}
         disabled={saving}
         className={
-          "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 " +
-          (on ? "bg-brand-blue" : "bg-slate-300")
+          "relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-50 " +
+          (on
+            ? "border-brand-blue bg-brand-blue"
+            : "border-slate-300 bg-slate-200")
         }
       >
         <span
           className={
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform " +
-            (on ? "translate-x-[22px]" : "translate-x-0.5")
+            "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform " +
+            (on ? "translate-x-[22px]" : "translate-x-1")
           }
         />
       </button>

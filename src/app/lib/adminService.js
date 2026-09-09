@@ -30,6 +30,15 @@ export async function listConnectionRequests({
   return res.data;
 }
 
+// GET /admin/comms -> { total, page, size, results:[{ran_at, emails_sent, ...}] }
+export async function listCommsRuns({ page = 1, size = 25 } = {}) {
+  const params = new URLSearchParams();
+  params.set("page", page);
+  params.set("size", size);
+  const res = await authRequest.get(`/admin/comms?${params.toString()}`);
+  return res.data;
+}
+
 export async function adminViewUser(memberNumber) {
   const res = await authRequest.get(`/admin/users/${memberNumber}`);
   return res.data; // { user, profile }

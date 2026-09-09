@@ -58,7 +58,7 @@ export default function SettingsPage() {
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Account
           </h2>
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="text-sm font-medium text-brand-navy">
               Delete account
             </div>

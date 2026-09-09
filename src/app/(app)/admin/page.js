@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useState, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import { getMetrics } from "@/app/lib/adminService";
@@ -32,6 +34,17 @@ function Stat({ label, value, sub, pct, soon }) {
       )}
     </div>
   );
+}
+
+function fmtRun(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function AdminDashboard() {
@@ -69,7 +82,8 @@ export default function AdminDashboard() {
     p = m.profiles,
     s = m.search,
     inv = m.invites,
-    req = m.connection_requests;
+    req = m.connection_requests,
+    comms = m.comms;
 
   return (
     <div className="space-y-8">
@@ -179,6 +193,42 @@ export default function AdminDashboard() {
               sub="members who invited ≥ 1"
             />
           </div>
+        </section>
+      )}
+
+      {/* ── Scheduled comms: email-job visibility ───────────────────────── */}
+      {comms && (
+        <section>
+          <h2 className="mb-1 text-sm font-semibold text-slate-500">
+            Scheduled emails
+          </h2>
+          <p className="mb-3 text-xs text-slate-400">
+            The daily email job. Lifetime totals and the last few runs, so an
+            odd run (mass send, or zero) is easy to catch.
+          </p>
+          <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Stat
+              label="Emails sent"
+              value={comms.total_emails}
+              sub="all time"
+            />
+            <Stat
+              label="Reminders"
+              value={comms.total_reminders}
+              sub="requests reminded"
+            />
+            <Stat
+              label="Suggestions"
+              value={comms.total_suggestions}
+              sub="suggestion / explore emails"
+            />
+          </div>
+          <Link
+            href="/admin/comms"
+            className="inline-block text-xs font-medium text-brand-blue hover:underline"
+          >
+            View all email runs &rarr;
+          </Link>
         </section>
       )}
 

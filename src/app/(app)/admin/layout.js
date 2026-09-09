@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users as UsersIcon,
   Link2,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { getMyProfile } from "@/app/lib/profileService";
@@ -50,30 +51,36 @@ export default function AdminLayout({ children }) {
   return (
     <div>
       {/* admin sub-nav + switch back to normal platform view */}
-      <div className="mb-6 flex items-center justify-between flex-wrap">
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 text-sm">
           <Link
             href="/admin"
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
           >
             <LayoutDashboard size={14} /> Overview
           </Link>
           <Link
             href="/admin/users"
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
           >
             <UsersIcon size={14} /> Members
           </Link>
           <Link
             href="/admin/connections"
-            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
           >
             <Link2 size={14} /> Connections
+          </Link>
+          <Link
+            href="/admin/comms"
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
+          >
+            <Mail size={14} /> Emails
           </Link>
         </div>
         <button
           onClick={() => router.push("/members")}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300"
         >
           <ArrowLeft size={13} /> Platform view
         </button>
