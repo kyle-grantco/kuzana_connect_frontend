@@ -50,7 +50,7 @@ export default function AdminLayout({ children }) {
   return (
     <div>
       {/* admin sub-nav + switch back to normal platform view */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between flex-wrap">
         <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
           <Link
             href="/admin"

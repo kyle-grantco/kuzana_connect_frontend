@@ -6,6 +6,7 @@ import {
   ChevronDown,
   User,
   UserPlus,
+  Settings,
   LogOut,
   LayoutDashboard,
 } from "lucide-react";
@@ -115,6 +116,15 @@ export default function AppShell({ children }) {
                     className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
                   >
                     <UserPlus size={15} /> Connection requests
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      router.push("/settings");
+                    }}
+                    className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    <Settings size={15} /> Settings
                   </button>
                   {(me?.user?.role === "admin" ||
                     me?.user?.role === "super_admin") && (

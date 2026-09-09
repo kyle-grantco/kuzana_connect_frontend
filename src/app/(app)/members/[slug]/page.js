@@ -9,7 +9,6 @@ import {
   Link as LinkIcon,
   MapPin,
   Pencil,
-  Trash2,
   Mail,
   UserPlus,
   UserCheck,
@@ -17,22 +16,16 @@ import {
   Check,
 } from "lucide-react";
 import Button from "@/app/components/ui/Button";
-import {
-  getMember,
-  getMyProfile,
-  deleteAccount,
-} from "@/app/lib/profileService";
+import { getMember, getMyProfile } from "@/app/lib/profileService";
 import { invitedBy } from "@/app/lib/inviteService";
 import ConnectRequestModal from "@/app/components/app/ConnectRequestModal";
 import ReachOutBlock from "@/app/components/app/ReachOutBlock";
-import { logout } from "@/app/lib/logout";
 import { memberNumberFromSlug, slugify } from "@/app/lib/slug";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
 import LockedTeaser from "@/app/components/app/LockedTeaser";
 import EndorsementsSection from "@/app/components/app/EndorsementsSection";
 import InvitesSection from "@/app/components/app/InvitesSection";
 import SuggestionsSections from "@/app/components/app/SuggestionsSections";
-import ConfirmModal from "@/app/components/ui/ConfirmModal";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 export default function MemberProfilePage() {
@@ -61,7 +54,6 @@ export default function MemberProfilePage() {
   const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
   const [viewerName, setViewerName] = useState("");
   const [inviter, setInviter] = useState(null);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const invitesRef = useRef(null);
 
   // Contact gating: contacts (whatsapp/email/linkedin) are hidden until the
@@ -74,8 +66,6 @@ export default function MemberProfilePage() {
     linkedin: null,
   });
   const [connectOpen, setConnectOpen] = useState(false);
-  const [connecting, setConnecting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   useEffect(() => {
@@ -115,19 +105,6 @@ export default function MemberProfilePage() {
       })
       .catch(() => {});
   }, [slug]);
-
-  async function handleDelete() {
-    setDeleting(true);
-    try {
-      await deleteAccount();
-      notify("Your account has been deleted.", "success", 3000);
-      await logout();
-    } catch {
-      notify("Couldn't delete your account. Please try again.", "error", 4000);
-      setDeleting(false);
-      setDeleteOpen(false);
-    }
-  }
 
   // Connect now opens the request composer. Contacts are revealed only after
   // the recipient accepts (handled server-side; this page reflects it on reload).
@@ -454,7 +431,7 @@ export default function MemberProfilePage() {
 
       {isMe && (
         <div className="mt-8 border-t border-slate-200 pt-5 text-center">
-          <div className="mb-3 flex items-center justify-center gap-4 text-[11px] text-slate-400">
+          <div className="flex items-center justify-center gap-4 text-[11px] text-slate-400">
             <Link href="/terms" className="hover:text-brand-navy">
               Terms
             </Link>
@@ -463,12 +440,6 @@ export default function MemberProfilePage() {
               Privacy Policy
             </Link>
           </div>
-          <button
-            onClick={() => setDeleteOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-red"
-          >
-            <Trash2 size={13} /> Delete my account
-          </button>
         </div>
       )}
 
@@ -479,17 +450,6 @@ export default function MemberProfilePage() {
         onSent={() =>
           setMember((m) => (m ? { ...m, request_status: "pending" } : m))
         }
-      />
-
-      <ConfirmModal
-        open={deleteOpen}
-        category="danger"
-        title="Delete your account?"
-        message="This permanently removes your profile and can't be undone."
-        confirmLabel="Delete account"
-        onConfirm={handleDelete}
-        onClose={() => setDeleteOpen(false)}
-        loading={deleting}
       />
     </>
   );
