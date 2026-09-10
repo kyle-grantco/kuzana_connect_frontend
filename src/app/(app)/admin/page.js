@@ -88,7 +88,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <section>
-        <div className="mb-1 flex items-center justify-between">
+        <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-500">Accounts</h2>
           <button
             onClick={load}
@@ -99,9 +99,6 @@ export default function AdminDashboard() {
             Refresh
           </button>
         </div>
-        <p className="mb-3 text-xs text-slate-400">
-          Everyone who has registered.
-        </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Stat
             label="Registered"
@@ -131,14 +128,9 @@ export default function AdminDashboard() {
       {/* ── Connection activity: requests + outcomes in one clean view ───── */}
       {req && (
         <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-500">
+          <h2 className="mb-2 text-sm font-semibold text-slate-500">
             Connection activity
           </h2>
-          <p className="mb-3 text-xs text-slate-400">
-            Are members trying to connect? Requests sent and how they resolve.
-            An accepted request is a connection. The percentage is accepted out
-            of all requests sent, so pending ones count against it.
-          </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
               label="Requests sent"
@@ -164,11 +156,7 @@ export default function AdminDashboard() {
       {/* ── Invites: the growth loop ─────────────────────────────────────── */}
       {inv && (
         <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-500">Invites</h2>
-          <p className="mb-3 text-xs text-slate-400">
-            The invite loop. Conversion is joined out of all invites sent
-            (excluding cancelled).
-          </p>
+          <h2 className="mb-2 text-sm font-semibold text-slate-500">Invites</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <Stat label="Total" value={inv.total} sub="all invites created" />
             <Stat
