@@ -54,18 +54,34 @@ authRequest.interceptors.request.use(
 );
 
 // --- Single-flight refresh -----------------------------------------------------
-// When the access token expires, several requests usually 401 at once. If each
-// one refreshed independently we'd fire concurrent /auth/refresh calls; because
-// refresh tokens ROTATE (each refresh invalidates the previous), all but the
-// first would fail and wrongly log the user out. So we share ONE refresh promise
-// across all concurrent 401s: the first starts it, the rest await the same one,
-// then everyone retries with the new token.
+// When the access token expires, several requests usually 401 at once. Refresh
+// tokens ROTATE server-side: each successful /auth/refresh revokes the token it
+// was called with. The browser swaps in the new refresh cookie from the
+// response, so refreshes that run one-AFTER-another are fine — each carries the
+// current token. The fatal case is refreshes that OVERLAP in flight: both were
+// sent carrying the same pre-rotation cookie, the backend rotates on the first,
+// and the second is a replay of a revoked token -> 401 -> forced logout.
+//
+// So we share ONE refresh promise across all concurrent 401s: the first starts
+// it, the rest await the same one, then everyone retries with the new token.
+// Nothing may refresh outside this guard (see refreshSessionShared below).
 let refreshPromise = null;
 
 function runRefresh() {
   if (!refreshPromise) {
-    refreshPromise = refreshSession().finally(() => {
-      refreshPromise = null; // reset once settled so future expiries can refresh
+    const p = refreshSession();
+    refreshPromise = p;
+    // Clear the guard on a MACROtask, not inside .finally(). A .finally()
+    // callback runs as a microtask the instant the refresh settles — i.e.
+    // BEFORE the `await runRefresh()` in the interceptor resumes. That left a
+    // window in which a 401 arriving moments later saw refreshPromise === null
+    // and started a SECOND /auth/refresh. Deferring the reset lets every caller
+    // already waiting on this refresh resume off the SAME promise first, so one
+    // token expiry produces exactly one rotation.
+    p.finally(() => {
+      setTimeout(() => {
+        if (refreshPromise === p) refreshPromise = null;
+      }, 0);
     });
   }
   return refreshPromise;
@@ -96,7 +112,13 @@ authRequest.interceptors.response.use(
   },
 );
 
-export const refreshSession = async () => {
+// PRIVATE — deliberately not exported. This is the RAW refresh: it bypasses the
+// single-flight guard, so two callers can have refreshes in flight at once. Both
+// then present the same pre-rotation refresh cookie, the backend rotates on the
+// first, and the second 401s -> the user is logged out at random. That is
+// exactly the bug the (app) layout used to cause by importing it directly.
+// Everything outside this module must go through refreshSessionShared().
+const refreshSession = async () => {
   try {
     const res = await publicRequest.get("/auth/refresh");
     const newToken = res.data?.csrf_token;
@@ -106,6 +128,11 @@ export const refreshSession = async () => {
     return false;
   }
 };
+
+// The ONLY safe way to refresh from outside this module: shares the in-flight
+// refresh with any concurrent caller instead of starting a competing one.
+// Returns true on success, false if the session is genuinely dead.
+export const refreshSessionShared = () => runRefresh();
 
 export const checkAuthStatus = async () => {
   const { setRole } = useAuthStore.getState();
@@ -118,12 +145,19 @@ export const checkAuthStatus = async () => {
   }
 };
 
-// Guard against multiple redirects if several requests fail at once.
-let authFailureHandled = false;
+// Guard against multiple redirects if several requests fail at once. This is a
+// TIMESTAMP, not a permanent boolean: a latched boolean never reset if the
+// redirect below didn't actually complete (user navigated away first, or a soft
+// nav kept the module alive), and every later genuine expiry then failed
+// silently — no toast, no redirect, just dead requests. A short window is all
+// that's needed to collapse a burst of simultaneous failures into one redirect.
+const AUTH_FAILURE_WINDOW_MS = 5000;
+let authFailureAt = 0;
 
 const handleAuthFailure = () => {
-  if (authFailureHandled) return;
-  authFailureHandled = true;
+  const now = Date.now();
+  if (now - authFailureAt < AUTH_FAILURE_WINDOW_MS) return;
+  authFailureAt = now;
 
   // Clean up stale auth state so the login page starts fresh. Without this, the
   // dead CSRF cookie lingers and re-hydrates into the store, so the first action
@@ -141,8 +175,9 @@ const handleAuthFailure = () => {
     .notify("Session expired. Please sign in again.", "warning", 0);
   if (typeof window !== "undefined") {
     setTimeout(() => {
-      // full navigation to login resets the module state (and thus the
-      // authFailureHandled guard) so future sessions behave normally.
+      // Full navigation to login resets module state so future sessions behave
+      // normally. If this navigation never happens, the timestamp guard above
+      // expires on its own rather than latching forever.
       window.location.href = "/auth/login";
     }, 1200);
   }

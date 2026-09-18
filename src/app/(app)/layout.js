@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { checkAuthStatus, refreshSession } from "@/app/lib/api";
+import { checkAuthStatus } from "@/app/lib/api";
 import { useAuthStore } from "@/app/store/authStore";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
 import { getMyProfile } from "@/app/lib/profileService";
@@ -27,14 +27,18 @@ export default function AppLayout({ children }) {
 
   useEffect(() => {
     async function guard() {
+      // checkAuthStatus() goes through authRequest, whose response interceptor
+      // ALREADY refreshes (via the shared single-flight promise) and retries on
+      // a 401. This used to call the raw refresh again on failure — a second,
+      // unguarded refresh that could overlap the interceptor's one; both then
+      // presented the same pre-rotation token and the loser 401'd, logging the
+      // user out at random. A false here is therefore terminal. If a manual
+      // refresh is ever needed here, use refreshSessionShared() — never a raw one.
       const authed = await checkAuthStatus();
       if (!authed) {
-        const refreshed = await refreshSession();
-        if (!refreshed) {
-          clearAuth();
-          router.replace("/auth/login");
-          return;
-        }
+        clearAuth();
+        router.replace("/auth/login");
+        return;
       }
 
       // load profile completion status for gating
