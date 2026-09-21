@@ -36,17 +36,6 @@ function Stat({ label, value, sub, pct, soon }) {
   );
 }
 
-function fmtRun(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function AdminDashboard() {
   const [m, setM] = useState(null);
   const [err, setErr] = useState("");
@@ -83,12 +72,14 @@ export default function AdminDashboard() {
     s = m.search,
     inv = m.invites,
     req = m.connection_requests,
+    fb = m.connection_feedback,
     comms = m.comms;
 
   return (
     <div className="space-y-8">
+      {/* Accounts */}
       <section>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-500">Accounts</h2>
           <button
             onClick={load}
@@ -125,10 +116,10 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* ── Connection activity: requests + outcomes in one clean view ───── */}
+      {/* Connection activity */}
       {req && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-slate-500">
+          <h2 className="mb-3 text-sm font-semibold text-slate-500">
             Connection activity
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -153,10 +144,63 @@ export default function AdminDashboard() {
         </section>
       )}
 
-      {/* ── Invites: the growth loop ─────────────────────────────────────── */}
+      {/* Connection feedback */}
+      {fb && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-slate-500">
+            Connection feedback
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat
+              label="Responses"
+              value={fb.responses}
+              sub="feedback submitted"
+            />
+            <Stat label="Useful" value={fb.useful} sub="confirmed useful" />
+            <Stat
+              label="Reached out"
+              value={fb.reached_out}
+              sub="actually made contact"
+            />
+            <Stat
+              label="Avg relevance"
+              value={fb.avg_relevance == null ? "—" : fb.avg_relevance}
+              sub="match quality (1-5)"
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Profiles */}
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">Profiles</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Fully complete" value={p.done.count} pct={p.done.pct} />
+          <Stat
+            label="Basic only"
+            value={p.mvp.count}
+            pct={p.mvp.pct}
+            sub="core profile done, extras skipped"
+          />
+          <Stat
+            label="Not started"
+            value={p.not_completed.count}
+            pct={p.not_completed.pct}
+            sub="no usable profile yet"
+          />
+          <Stat
+            label="Discoverable"
+            value={p.searchable.count}
+            pct={p.searchable.pct}
+            sub="basic + fully complete"
+          />
+        </div>
+      </section>
+
+      {/* Invites */}
       {inv && (
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-slate-500">Invites</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-500">Invites</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <Stat label="Total" value={inv.total} sub="all invites created" />
             <Stat
@@ -184,16 +228,61 @@ export default function AdminDashboard() {
         </section>
       )}
 
-      {/* ── Scheduled comms: email-job visibility ───────────────────────── */}
+      {/* Search */}
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">Search</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Total searches" value={s.total_searches} />
+          <Stat label="No results" value={s.zero_result} />
+        </div>
+        {s.top_terms?.length > 0 && (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-xs font-semibold text-slate-500">
+              Most-searched terms
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {s.top_terms.map((t, i) => (
+                <span
+                  key={i}
+                  className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+                >
+                  {t.term} <span className="text-slate-400">×{t.count}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Members by industry */}
+      {m.industry_distribution?.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-slate-500">
+            Members by industry
+          </h2>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap gap-2">
+              {m.industry_distribution
+                .sort((x, y) => y.count - x.count)
+                .map((d, i) => (
+                  <span
+                    key={i}
+                    className="rounded-full bg-brand-blue-50 px-3 py-1 text-xs text-brand-blue-700"
+                  >
+                    {d.industry} <span className="opacity-60">×{d.count}</span>
+                  </span>
+                ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Scheduled emails (ops; least critical, kept at the bottom) */}
       {comms && (
         <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-500">
+          <h2 className="mb-3 text-sm font-semibold text-slate-500">
             Scheduled emails
           </h2>
-          <p className="mb-3 text-xs text-slate-400">
-            The daily email job. Lifetime totals and the last few runs, so an
-            odd run (mass send, or zero) is easy to catch.
-          </p>
           <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat
               label="Emails sent"
@@ -219,109 +308,6 @@ export default function AdminDashboard() {
           </Link>
         </section>
       )}
-
-      <section>
-        <h2 className="mb-1 text-sm font-semibold text-slate-500">Profiles</h2>
-        <p className="mb-3 text-xs text-slate-400">
-          Onboarding progress of active members. Percentages are of active
-          accounts.
-        </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Fully complete" value={p.done.count} pct={p.done.pct} />
-          <Stat
-            label="Basic only"
-            value={p.mvp.count}
-            pct={p.mvp.pct}
-            sub="core profile done, extras skipped"
-          />
-          <Stat
-            label="Not started"
-            value={p.not_completed.count}
-            pct={p.not_completed.pct}
-            sub="no usable profile yet"
-          />
-          <Stat
-            label="Discoverable"
-            value={p.searchable.count}
-            pct={p.searchable.pct}
-            sub="basic + fully complete"
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-500">Search</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Total searches" value={s.total_searches} />
-          <Stat label="No results" value={s.zero_result} />
-        </div>
-        {s.top_terms?.length > 0 && (
-          <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-1 text-xs font-semibold text-slate-500">
-              Most-searched terms
-            </div>
-            <p className="mb-2 text-[11px] text-slate-400">
-              How many times each exact phrase was searched.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {s.top_terms.map((t, i) => (
-                <span
-                  key={i}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
-                >
-                  {t.term} <span className="text-slate-400">×{t.count}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {m.industry_distribution?.length > 0 && (
-        <section>
-          <h2 className="mb-1 text-sm font-semibold text-slate-500">
-            Members by industry
-          </h2>
-          <p className="mb-3 text-xs text-slate-400">
-            Number of members in each industry.
-          </p>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap gap-2">
-              {m.industry_distribution
-                .sort((x, y) => y.count - x.count)
-                .map((d, i) => (
-                  <span
-                    key={i}
-                    className="rounded-full bg-brand-blue-50 px-3 py-1 text-xs text-brand-blue-700"
-                  >
-                    {d.industry} <span className="opacity-60">×{d.count}</span>
-                  </span>
-                ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section>
-        <h2 className="mb-1 text-sm font-semibold text-slate-500">
-          Contact preferences
-        </h2>
-        <p className="mb-3 text-xs text-slate-400">
-          How many members allow each contact method.
-        </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat
-            label="Allow WhatsApp"
-            value={m.contact_prefs.share_whatsapp}
-            sub="reachable via WhatsApp"
-          />
-          <Stat
-            label="Allow Email"
-            value={m.contact_prefs.share_email}
-            sub="reachable via email"
-          />
-        </div>
-      </section>
     </div>
   );
 }

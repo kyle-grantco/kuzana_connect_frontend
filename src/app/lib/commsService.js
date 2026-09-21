@@ -20,3 +20,15 @@ export async function unsubscribeByToken(token) {
   );
   return res.data;
 }
+
+export async function verifyFeedbackToken(token) {
+  const res = await publicRequest.get(
+    `/comms/feedback/verify?token=${encodeURIComponent(token)}`,
+  );
+  return res.data; // { ok, other_name }
+}
+
+export async function submitFeedback(payload) {
+  const res = await publicRequest.post("/comms/feedback", payload);
+  return res.data; // { ok }
+}
