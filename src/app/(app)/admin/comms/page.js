@@ -84,7 +84,7 @@ export default function AdminCommsPage() {
                   <th className="px-4 py-2.5">Emails</th>
                   <th className="px-4 py-2.5">Reminders</th>
                   <th className="px-4 py-2.5">Suggestions</th>
-                  <th className="px-4 py-2.5">New members</th>
+                  <th className="px-4 py-2.5">Nudges</th>
                 </tr>
               </thead>
               <tbody>
@@ -106,7 +106,7 @@ export default function AdminCommsPage() {
                       {r.suggestions_sent}
                     </td>
                     <td className="px-4 py-2.5 text-slate-500">
-                      {r.new_members}
+                      {r.nudges_sent}
                     </td>
                   </tr>
                 ))}

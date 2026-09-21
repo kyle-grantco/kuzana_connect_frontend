@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [m, setM] = useState(null);
   const [err, setErr] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [newPeriod, setNewPeriod] = useState("week"); // day | week | month
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -90,6 +91,32 @@ export default function AdminDashboard() {
             Refresh
           </button>
         </div>
+        {a.new_members && (
+          <div className="mb-3 flex items-center gap-2">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div className="text-2xl font-semibold text-brand-navy">
+                {a.new_members[newPeriod]}
+              </div>
+              <div className="mt-0.5 text-xs text-slate-500">New members</div>
+            </div>
+            <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-xs">
+              {["day", "week", "month"].map((per) => (
+                <button
+                  key={per}
+                  onClick={() => setNewPeriod(per)}
+                  className={
+                    "rounded-md px-2.5 py-1 capitalize " +
+                    (newPeriod === per
+                      ? "bg-white font-medium text-brand-navy"
+                      : "text-slate-500")
+                  }
+                >
+                  {per}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Stat
             label="Registered"
@@ -283,7 +310,7 @@ export default function AdminDashboard() {
           <h2 className="mb-3 text-sm font-semibold text-slate-500">
             Scheduled emails
           </h2>
-          <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
               label="Emails sent"
               value={comms.total_emails}
@@ -298,6 +325,11 @@ export default function AdminDashboard() {
               label="Suggestions"
               value={comms.total_suggestions}
               sub="suggestion / explore emails"
+            />
+            <Stat
+              label="Nudges"
+              value={comms.total_nudges}
+              sub="connection follow-ups"
             />
           </div>
           <Link
