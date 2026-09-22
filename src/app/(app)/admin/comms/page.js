@@ -81,10 +81,10 @@ export default function AdminCommsPage() {
               <thead className="border-b border-slate-100 bg-slate-50 text-left text-xs text-slate-500">
                 <tr>
                   <th className="px-4 py-2.5">Run</th>
-                  <th className="px-4 py-2.5">Emails</th>
-                  <th className="px-4 py-2.5">Reminders</th>
-                  <th className="px-4 py-2.5">Suggestions</th>
-                  <th className="px-4 py-2.5">Nudges</th>
+                  <th className="px-4 py-2.5">Total emails</th>
+                  <th className="px-4 py-2.5">Request reminders</th>
+                  <th className="px-4 py-2.5">Suggestion emails</th>
+                  <th className="px-4 py-2.5">Connection nudges</th>
                 </tr>
               </thead>
               <tbody>

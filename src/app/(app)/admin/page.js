@@ -312,24 +312,24 @@ export default function AdminDashboard() {
           </h2>
           <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
-              label="Emails sent"
+              label="Total emails"
               value={comms.total_emails}
-              sub="all time"
+              sub="all emails sent, all time"
             />
             <Stat
-              label="Reminders"
+              label="Request reminders"
               value={comms.total_reminders}
-              sub="requests reminded"
+              sub="pending requests reminded"
             />
             <Stat
-              label="Suggestions"
+              label="Suggestion emails"
               value={comms.total_suggestions}
-              sub="suggestion / explore emails"
+              sub="weekly suggestions / explore"
             />
             <Stat
-              label="Nudges"
+              label="Connection nudges"
               value={comms.total_nudges}
-              sub="connection follow-ups"
+              sub="post-connection follow-ups"
             />
           </div>
           <Link
