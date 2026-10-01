@@ -14,7 +14,14 @@ import {
   markNotificationsRead,
 } from "@/app/lib/connectionRequestService";
 
-const POLL_MS = 60000;
+// Poll slowly, and ONLY while the tab is visible and the window focused. An
+// idle tab must make no requests: the old 60s poll from background tabs forced
+// a token refresh every 15 minutes forever (refresh ran ~6x more often than page
+// loads), kept sessions alive indefinitely, and marked members "active" for the
+// day without them doing anything. Notifications here are low-volume (connection
+// requests / accepts) and every one is also emailed, so a 5-minute cadence while
+// the user is actually looking is plenty; coming back to the tab fetches once.
+const POLL_MS = 5 * 60 * 1000;
 
 export default function NotificationBell() {
   const router = useRouter();
@@ -34,9 +41,44 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
-    loadCount();
-    const t = setInterval(loadCount, POLL_MS);
-    return () => clearInterval(t);
+    let timer = null;
+    const isActive = () =>
+      document.visibilityState === "visible" && document.hasFocus();
+    const start = () => {
+      if (!timer) timer = setInterval(loadCount, POLL_MS);
+    };
+    const stop = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    // Tab/window came back -> fetch once so the badge is current, then resume
+    // polling. Went away -> stop entirely.
+    const onChange = () => {
+      if (isActive()) {
+        loadCount();
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    // One fetch per page load is fine; it's the idle repeats we drop. Deferred
+    // to a callback (not called synchronously in the effect body) per the
+    // react-hooks/set-state-in-effect rule.
+    const initial = setTimeout(loadCount, 0);
+    if (isActive()) start();
+    document.addEventListener("visibilitychange", onChange);
+    window.addEventListener("focus", onChange);
+    window.addEventListener("blur", onChange);
+    return () => {
+      clearTimeout(initial);
+      stop();
+      document.removeEventListener("visibilitychange", onChange);
+      window.removeEventListener("focus", onChange);
+      window.removeEventListener("blur", onChange);
+    };
   }, [loadCount]);
 
   useEffect(() => {
