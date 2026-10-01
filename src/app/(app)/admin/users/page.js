@@ -23,6 +23,7 @@ import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 const STATUS_TABS = ["all", "active", "pending", "suspended", "deleted"];
+const FILTER_TABS = [...STATUS_TABS, "inviters"];
 const SIZE_OPTIONS = [20, 50, 100];
 
 const statusStyle = {
@@ -43,6 +44,7 @@ export default function AdminMembersPage() {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(20);
   const [total, setTotal] = useState(0);
+  const [invitersOnly, setInvitersOnly] = useState(false);
 
   useEffect(() => {
     getMyProfile()
@@ -57,6 +59,7 @@ export default function AdminMembersPage() {
         const data = await listUsers({
           status: status === "all" ? undefined : status,
           q: q.trim(),
+          inviters_only: invitersOnly || undefined,
           page: toPage,
           size,
         });
@@ -70,12 +73,12 @@ export default function AdminMembersPage() {
         setLoading(false);
       }
     },
-    [status, q, size, page],
+    [status, q, size, page, invitersOnly],
   );
 
   useEffect(() => {
     load(1);
-  }, [status, size]); // eslint-disable-line
+  }, [status, size, invitersOnly]); // eslint-disable-line
 
   const totalPages = Math.max(1, Math.ceil(total / size));
   const from = total === 0 ? 0 : (page - 1) * size + 1;
@@ -102,20 +105,34 @@ export default function AdminMembersPage() {
     <div>
       <div className="mb-3 flex items-center gap-2">
         <div className="flex flex-1 gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 text-xs">
-          {STATUS_TABS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setStatus(t)}
-              className={
-                "shrink-0 rounded-md px-3 py-1.5 capitalize " +
-                (status === t
-                  ? "bg-white font-medium text-brand-navy"
-                  : "text-slate-500")
-              }
-            >
-              {t}
-            </button>
-          ))}
+          {FILTER_TABS.map((t) => {
+            const isInviters = t === "inviters";
+            const active = isInviters
+              ? invitersOnly
+              : !invitersOnly && status === t;
+            return (
+              <button
+                key={t}
+                onClick={() => {
+                  if (isInviters) {
+                    setInvitersOnly(true);
+                    setStatus("all");
+                  } else {
+                    setInvitersOnly(false);
+                    setStatus(t);
+                  }
+                }}
+                className={
+                  "shrink-0 rounded-md px-3 py-1.5 capitalize " +
+                  (active
+                    ? "bg-white font-medium text-brand-navy"
+                    : "text-slate-500")
+                }
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
         <button
           onClick={() => load()}
@@ -150,6 +167,7 @@ export default function AdminMembersPage() {
       <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
         <span>
           {total === 0 ? "0" : `${from}\u2013${to}`} of {total}
+          {invitersOnly ? " · inviters" : ""}
         </span>
         <label className="flex items-center gap-1.5">
           Per page
@@ -170,7 +188,9 @@ export default function AdminMembersPage() {
       {loading ? (
         <p className="py-10 text-center text-sm text-slate-400">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="py-10 text-center text-sm text-slate-400">No members.</p>
+        <p className="py-10 text-center text-sm text-slate-400">
+          {invitersOnly ? "No members have invited others yet." : "No members."}
+        </p>
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -342,7 +362,6 @@ function RowMenu({ user, isSuper, onRole, onSuspend, onActivate, onDelete }) {
   const canActivate = isSuper && user.status !== "active";
   const canDelete = isSuper && user.status !== "deleted";
 
-  // Nothing actionable for non-super admins now that View lives in the row.
   if (!isSuper) return null;
 
   return (

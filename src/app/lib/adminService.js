@@ -1,15 +1,37 @@
 // Admin / super_admin API calls. All require an admin+ role server-side.
 import { authRequest } from "./api";
 
-export async function getMetrics() {
-  const res = await authRequest.get("/admin/metrics");
+export async function getMetrics({ dateFrom, dateTo } = {}) {
+  const params = new URLSearchParams();
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+  const qs = params.toString();
+  const res = await authRequest.get(`/admin/metrics${qs ? `?${qs}` : ""}`);
   return res.data;
 }
 
-export async function listUsers({ status, q, page = 1, size = 20 } = {}) {
+export async function getMetricCount({ metric, from, to }) {
+  const params = new URLSearchParams();
+  params.set("metric", metric);
+  params.set("date_from", from);
+  params.set("date_to", to);
+  const res = await authRequest.get(
+    `/admin/metrics/count?${params.toString()}`,
+  );
+  return res.data; // { metric, from, to, count }
+}
+
+export async function listUsers({
+  status,
+  q,
+  inviters_only,
+  page = 1,
+  size = 20,
+} = {}) {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   if (q) params.set("q", q);
+  if (inviters_only) params.set("inviters_only", "true");
   params.set("page", page);
   params.set("size", size);
   const res = await authRequest.get(`/admin/users?${params.toString()}`);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import { getMetrics } from "@/app/lib/adminService";
+import MetricCard from "@/app/components/admin/MetricCard";
 
 function Stat({ label, value, sub, pct, soon }) {
   return (
@@ -40,7 +41,6 @@ export default function AdminDashboard() {
   const [m, setM] = useState(null);
   const [err, setErr] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [newPeriod, setNewPeriod] = useState("week"); // day | week | month
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -74,49 +74,66 @@ export default function AdminDashboard() {
     inv = m.invites,
     req = m.connection_requests,
     fb = m.connection_feedback,
+    eng = m.engagement || {},
     comms = m.comms;
+
+  // seeds let the period cards render their default value without an extra fetch
+  const nm = a.new_members || {};
+  const newSeed = {
+    today: nm.today ?? 0,
+    this_week: nm.week ?? 0,
+    this_month: nm.month ?? 0,
+  };
+  const activeSeed = {
+    today: eng.dau ?? 0,
+    this_week: eng.wau ?? 0,
+    this_month: eng.mau ?? 0,
+  };
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-end">
+        <button
+          onClick={load}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300 disabled:opacity-50"
+        >
+          <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />{" "}
+          Refresh
+        </button>
+      </div>
+
       {/* Accounts */}
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-500">Accounts</h2>
-          <button
-            onClick={load}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300 disabled:opacity-50"
-          >
-            <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />{" "}
-            Refresh
-          </button>
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">Accounts</h2>
+
+        {/* New members — three fixed cards, each with its own period dropdown */}
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-2xl">
+          <MetricCard
+            label="New members"
+            metric="new_members"
+            options={["today", "yesterday"]}
+            initial="today"
+            seed={newSeed}
+          />
+          <MetricCard
+            label="New members"
+            metric="new_members"
+            options={["this_week", "last_week"]}
+            initial="this_week"
+            seed={newSeed}
+          />
+          <MetricCard
+            label="New members"
+            metric="new_members"
+            options={["this_month"]}
+            initial="this_month"
+            monthsBack={6}
+            allowCustom
+            seed={newSeed}
+          />
         </div>
-        {a.new_members && (
-          <div className="mb-3 flex items-center gap-2">
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <div className="text-2xl font-semibold text-brand-navy">
-                {a.new_members[newPeriod]}
-              </div>
-              <div className="mt-0.5 text-xs text-slate-500">New members</div>
-            </div>
-            <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-xs">
-              {["day", "week", "month"].map((per) => (
-                <button
-                  key={per}
-                  onClick={() => setNewPeriod(per)}
-                  className={
-                    "rounded-md px-2.5 py-1 capitalize " +
-                    (newPeriod === per
-                      ? "bg-white font-medium text-brand-navy"
-                      : "text-slate-500")
-                  }
-                >
-                  {per}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Stat
             label="Registered"
@@ -140,6 +157,53 @@ export default function AdminDashboard() {
           />
           <Stat label="Deleted" value={a.deleted} sub="removed accounts" />
           <Stat label="Logged in" soon />
+        </div>
+      </section>
+
+      {/* Engagement (active users) — fixed cards, each with its own period */}
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-slate-500">
+          Engagement
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <Stat
+            label="Online now"
+            value={eng.online_now ?? 0}
+            sub="active in last 5 min"
+          />
+          <MetricCard
+            label="Active"
+            metric="active"
+            options={["today", "yesterday"]}
+            initial="today"
+            seed={activeSeed}
+          />
+          <MetricCard
+            label="Active"
+            metric="active"
+            options={["this_week", "last_week"]}
+            initial="this_week"
+            seed={activeSeed}
+          />
+          <MetricCard
+            label="Active"
+            metric="active"
+            options={["this_month"]}
+            initial="this_month"
+            monthsBack={6}
+            allowCustom
+            seed={activeSeed}
+          />
+          <Stat
+            label="Returning (WAU)"
+            value={eng.returning_wau ?? 0}
+            sub="joined > 7d ago"
+          />
+          <Stat
+            label="Stickiness"
+            value={eng.stickiness_pct == null ? "—" : eng.stickiness_pct + "%"}
+            sub="WAU ÷ active members"
+          />
         </div>
       </section>
 
