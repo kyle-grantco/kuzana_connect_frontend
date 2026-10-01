@@ -90,6 +90,13 @@ function runRefresh() {
 // On 401 — attempt one (shared) refresh, retry the original request, else fail.
 // A CSRF-mismatch 401 that is NOT token expiry would loop, so we only refresh
 // once per request (_retry guard) and give up cleanly after.
+//
+// Only a refresh outcome of "dead" (the server said 401 to /auth/refresh) logs
+// the user out. A "transient" outcome — 5xx, 429, network/CORS failure, timeout
+// — means we could not renew RIGHT NOW, not that the session is gone. In that
+// case this request fails, tagged so callers can tell, and the session is left
+// alone; the next 401 will try again. Collapsing every failure into a logout is
+// what turned a backend 500 and Nginx rate-limit 429s into mass forced logouts.
 authRequest.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -100,13 +107,14 @@ authRequest.interceptors.response.use(
       !originalRequest._retry
     ) {
       originalRequest._retry = true;
-      const success = await runRefresh();
-      if (success) {
+      const outcome = await runRefresh();
+      if (outcome === "ok") {
         originalRequest.headers["X-CSRF-TOKEN"] =
           useAuthStore.getState().csrfToken;
         return authRequest(originalRequest);
       }
-      handleAuthFailure();
+      error.refreshOutcome = outcome; // "dead" | "transient", for callers
+      if (outcome === "dead") handleAuthFailure();
     }
     return Promise.reject(error);
   },
@@ -118,30 +126,45 @@ authRequest.interceptors.response.use(
 // first, and the second 401s -> the user is logged out at random. That is
 // exactly the bug the (app) layout used to cause by importing it directly.
 // Everything outside this module must go through refreshSessionShared().
+//
+// Resolves (never rejects) to one of:
+//   "ok"        -> rotated; new CSRF token is in the store
+//   "dead"      -> the server answered 401: refresh token missing, expired or
+//                  revoked. The session is genuinely over.
+//   "transient" -> anything else: 5xx, 429 from Nginx, a network/CORS-blocked
+//                  response (error.response is undefined), a timeout. The
+//                  session may be perfectly fine; we just couldn't renew now.
 const refreshSession = async () => {
   try {
     const res = await publicRequest.get("/auth/refresh");
     const newToken = res.data?.csrf_token;
     if (newToken) useAuthStore.getState().setCsrfToken(newToken);
-    return true;
-  } catch {
-    return false;
+    return "ok";
+  } catch (err) {
+    return err?.response?.status === 401 ? "dead" : "transient";
   }
 };
 
 // The ONLY safe way to refresh from outside this module: shares the in-flight
 // refresh with any concurrent caller instead of starting a competing one.
-// Returns true on success, false if the session is genuinely dead.
+// Resolves to "ok" | "dead" | "transient" (see refreshSession).
 export const refreshSessionShared = () => runRefresh();
 
+// Resolves to "ok" | "dead" | "transient". The interceptor has already done the
+// single-flight refresh + retry by the time an error reaches us, so:
+//   - a 401 that survived that (or a refresh that said "dead") -> "dead"
+//   - a refresh that couldn't complete, or any non-401 failure -> "transient"
+// Callers must only treat "dead" as a reason to send the user to login.
 export const checkAuthStatus = async () => {
   const { setRole } = useAuthStore.getState();
   try {
     const res = await authRequest.get("/auth/auth_check");
     setRole(res.data?.role);
-    return true;
-  } catch {
-    return false;
+    return "ok";
+  } catch (err) {
+    if (err?.refreshOutcome === "transient") return "transient";
+    if (err?.refreshOutcome === "dead") return "dead";
+    return err?.response?.status === 401 ? "dead" : "transient";
   }
 };
 
