@@ -111,7 +111,10 @@ export default function MetricCard({
       : null,
   );
   const [loading, setLoading] = useState(false);
-  const seededKey = useRef(initial || options[0]);
+  // true only until the first user-driven change; lets us render the seeded
+  // initial value without a fetch, but still fetch whenever the user picks a
+  // period later (including re-picking the initial one).
+  const usedSeed = useRef(!!(seed && (initial || options[0]) in seed));
 
   async function fetchFor(range) {
     if (!range?.from || !range?.to) return;
@@ -131,11 +134,14 @@ export default function MetricCard({
   }
 
   useEffect(() => {
-    // don't refetch the seeded initial value on mount
-    if (key === seededKey.current && seed && key in seed) return;
+    // skip the fetch ONCE on mount if we rendered a seeded value; after that,
+    // always fetch on a period change (even back to the initial key).
+    if (usedSeed.current) {
+      usedSeed.current = false;
+      return;
+    }
     if (key === "custom") return; // wait for Apply
     fetchFor(presetRange(key));
-    // eslint-disable-line
   }, [key]); // eslint-disable-line
 
   const showCustomInputs = allowCustom && key === "custom";
