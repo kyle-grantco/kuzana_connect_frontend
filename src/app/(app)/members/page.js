@@ -394,7 +394,7 @@ export default function DirectoryPage() {
                 <button
                   key={m.member_number}
                   onClick={() => openMember(m)}
-                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                  className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                 >
                   <div className="mb-3 flex items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-blue text-sm font-medium text-white">
@@ -409,7 +409,7 @@ export default function DirectoryPage() {
                         initials(m.full_name)
                       )}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold text-brand-navy">
                         {m.full_name}
                       </div>
@@ -423,7 +423,7 @@ export default function DirectoryPage() {
                       {m.offerings.slice(0, 3).map((o, i) => (
                         <span
                           key={i}
-                          className="rounded-full bg-brand-blue-50 px-2 py-0.5 text-[11px] text-brand-blue-700"
+                          className="max-w-full break-words rounded-full bg-brand-blue-50 px-2 py-0.5 text-[11px] text-brand-blue-700"
                         >
                           {o}
                         </span>
@@ -436,7 +436,7 @@ export default function DirectoryPage() {
                     </div>
                   )}
                   {m.location && (
-                    <div className="mt-3 text-[11px] text-slate-400">
+                    <div className="mt-3 break-words text-[11px] text-slate-400">
                       {m.location}
                     </div>
                   )}

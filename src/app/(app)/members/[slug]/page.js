@@ -14,6 +14,7 @@ import {
   UserCheck,
   Clock,
   Check,
+  Copy,
 } from "lucide-react";
 import Button from "@/app/components/ui/Button";
 import { getMember, getMyProfile } from "@/app/lib/profileService";
@@ -66,6 +67,7 @@ export default function MemberProfilePage() {
     linkedin: null,
   });
   const [connectOpen, setConnectOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   useEffect(() => {
@@ -108,6 +110,19 @@ export default function MemberProfilePage() {
 
   // Connect now opens the request composer. Contacts are revealed only after
   // the recipient accepts (handled server-side; this page reflects it on reload).
+
+  // The displayed link is truncated, so copying is the only reliable way to get
+  // the full URL out of the page.
+  async function copyPrimaryLink() {
+    try {
+      await navigator.clipboard.writeText(ensureUrl(member.primary_link));
+      setLinkCopied(true);
+      notify("Link copied.", "success", 2000);
+      setTimeout(() => setLinkCopied(false), 1500);
+    } catch {
+      notify("Couldn't copy. Long-press the link to copy it.", "error", 3000);
+    }
+  }
 
   if (member === undefined) {
     return <p className="py-16 text-center text-sm text-slate-400">Loading…</p>;
@@ -155,7 +170,7 @@ export default function MemberProfilePage() {
             <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-brand-blue text-xl font-medium text-white">
               {initials(member.full_name)}
             </div>
-            <h1 className="text-lg font-semibold text-brand-navy">
+            <h1 className="break-words text-lg font-semibold text-brand-navy">
               {member.full_name}
             </h1>
             <p className="mt-2 text-sm text-slate-500">
@@ -174,7 +189,7 @@ export default function MemberProfilePage() {
                       `/members/${slugify(inviter.full_name || "")}-${inviter.member_number}`,
                     )
                   }
-                  className="text-brand-blue hover:text-brand-blue-600"
+                  className="break-words text-brand-blue hover:text-brand-blue-600"
                 >
                   {inviter.full_name}
                 </button>
@@ -249,15 +264,16 @@ export default function MemberProfilePage() {
                 initials(member.full_name)
               )}
             </div>
-            <h1 className="text-lg font-semibold text-brand-navy">
+            <h1 className="break-words text-lg font-semibold text-brand-navy">
               {member.full_name}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 break-words text-sm text-slate-500">
               {[member.title, member.business_name].filter(Boolean).join(" · ")}
             </p>
             {member.location && (
               <p className="mt-1 flex items-center justify-center gap-1 text-xs text-slate-400">
-                <MapPin size={12} /> {member.location}
+                <MapPin size={12} className="shrink-0" />
+                <span className="break-words">{member.location}</span>
               </p>
             )}
             {connected && !isMe && !member.is_self && (
@@ -267,14 +283,28 @@ export default function MemberProfilePage() {
             )}
 
             {member.primary_link && (
-              <a
-                href={ensureUrl(member.primary_link)}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-sm text-brand-blue hover:border-slate-300"
-              >
-                <LinkIcon size={14} /> {prettyLink(member.primary_link)}
-              </a>
+              <div className="mt-4 flex items-stretch gap-2">
+                <a
+                  href={ensureUrl(member.primary_link)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={prettyLink(member.primary_link)}
+                  className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-brand-blue hover:border-slate-300"
+                >
+                  <LinkIcon size={14} className="shrink-0" />
+                  <span className="truncate">
+                    {prettyLink(member.primary_link)}
+                  </span>
+                </a>
+                <button
+                  onClick={copyPrimaryLink}
+                  title="Copy link"
+                  aria-label="Copy link"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-500 hover:border-slate-300 hover:text-brand-blue"
+                >
+                  {linkCopied ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
             )}
 
             {/* Contact channels are gated behind a connection. primary_link
@@ -339,7 +369,7 @@ export default function MemberProfilePage() {
                       `/members/${slugify(inviter.full_name || "")}-${inviter.member_number}`,
                     )
                   }
-                  className="text-brand-blue hover:text-brand-blue-600"
+                  className="break-words text-brand-blue hover:text-brand-blue-600"
                 >
                   {inviter.full_name}
                 </button>
@@ -352,7 +382,7 @@ export default function MemberProfilePage() {
         <div className="space-y-5 md:col-span-2">
           {member.intro && (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p className="break-words text-sm leading-relaxed text-slate-600">
                 {member.intro}
               </p>
             </div>
@@ -368,7 +398,7 @@ export default function MemberProfilePage() {
                   {member.industries.map((i) => (
                     <span
                       key={i.id}
-                      className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+                      className="max-w-full break-words rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
                     >
                       {i.label}
                     </span>
@@ -466,7 +496,12 @@ function Section({ title, items, tone }) {
       <div className="mb-2 text-xs font-semibold text-slate-500">{title}</div>
       <div className="flex flex-wrap gap-2">
         {items.map((it, i) => (
-          <span key={i} className={"rounded-full px-3 py-1 text-xs " + cls}>
+          <span
+            key={i}
+            className={
+              "max-w-full break-words rounded-full px-3 py-1 text-xs " + cls
+            }
+          >
             {it}
           </span>
         ))}

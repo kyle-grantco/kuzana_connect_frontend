@@ -129,10 +129,10 @@ export default function ConnectionRequests() {
               >
                 <button
                   onClick={() => openProfile(r.requester)}
-                  className="flex items-center gap-3 text-left"
+                  className="flex w-full items-center gap-3 text-left"
                 >
                   <Avatar p={r.requester} />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold text-brand-navy">
                       {r.requester?.full_name}
                     </div>
@@ -143,7 +143,7 @@ export default function ConnectionRequests() {
                     </div>
                   </div>
                 </button>
-                <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                <p className="mt-3 break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
                   {r.message}
                 </p>
                 {r.status === "pending" ? (

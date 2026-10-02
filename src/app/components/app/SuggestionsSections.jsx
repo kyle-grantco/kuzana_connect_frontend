@@ -139,7 +139,7 @@ function SuggestionCard({ m, onOpen }) {
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onOpen(m);
       }}
-      className="flex cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+      className="flex min-w-0 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
     >
       <div className="mb-2 flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-blue text-sm font-medium text-white">
@@ -154,7 +154,7 @@ function SuggestionCard({ m, onOpen }) {
             initials(m.full_name)
           )}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-brand-navy">
             {m.full_name}
           </div>
@@ -165,13 +165,15 @@ function SuggestionCard({ m, onOpen }) {
       </div>
 
       {why && (
-        <div className="rounded-lg bg-brand-yellow-50 px-2.5 py-1.5 text-[11px] leading-snug text-brand-navy">
+        <div className="break-words rounded-lg bg-brand-yellow-50 px-2.5 py-1.5 text-[11px] leading-snug text-brand-navy">
           {why}
         </div>
       )}
 
       {m.location && (
-        <div className="mt-2 text-[11px] text-slate-400">{m.location}</div>
+        <div className="mt-2 break-words text-[11px] text-slate-400">
+          {m.location}
+        </div>
       )}
 
       <button
