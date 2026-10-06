@@ -19,7 +19,7 @@ import {
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { useConnectionQuota } from "@/app/store/connectionQuotaStore";
 
-const MAX = 140; // one sentence
+const MAX = 300; // a line or two: enough for real context and the ask, not an essay
 const MIN = 30; // enough to force a real reason, blocks "hi" / "let's connect"
 
 export default function ConnectRequestModal({
@@ -100,7 +100,7 @@ export default function ConnectRequestModal({
           value={message}
           onChange={(e) => setMessage(e.target.value.slice(0, MAX))}
           rows={3}
-          placeholder="Your reason, in a sentence."
+          placeholder="Your reason for connecting"
           className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
         />
         <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
