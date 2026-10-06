@@ -4,6 +4,11 @@
 // profile Connect button. Pre-fills a short intro (editable). On success the
 // request is sent and the recipient is notified; contacts are NOT revealed until
 // they accept.
+//
+// Connections here are ACTIVE, not passive: the sender must state a real reason
+// (one sentence, enforced by a min length), so requests carry intent rather than
+// being casual one-click "connects". The copy and the length bounds both nudge
+// toward purposeful outreach.
 
 import { useState, useEffect } from "react";
 import { X, Send } from "lucide-react";
@@ -14,7 +19,8 @@ import {
 import { useNotificationStore } from "@/app/store/notificationStore";
 import { useConnectionQuota } from "@/app/store/connectionQuotaStore";
 
-const MAX = 500;
+const MAX = 140; // one sentence
+const MIN = 30; // enough to force a real reason, blocks "hi" / "let's connect"
 
 export default function ConnectRequestModal({
   open,
@@ -31,7 +37,7 @@ export default function ConnectRequestModal({
 
   useEffect(() => {
     if (!open) return;
-    setMessage(prefill || "");
+    setMessage((prefill || "").slice(0, MAX));
     getRequestQuota()
       .then(setQuota)
       .catch(() => setQuota(null));
@@ -41,11 +47,12 @@ export default function ConnectRequestModal({
 
   const remaining = quota?.remaining;
   const noneLeft = remaining === 0;
+  const tooShort = message.trim().length < MIN;
 
   async function submit() {
     const msg = message.trim();
-    if (!msg) {
-      notify("Please add a short message.", "error", 3000);
+    if (msg.length < MIN) {
+      notify("Add a sentence on why you'd like to connect.", "error", 3000);
       return;
     }
     setSending(true);
@@ -53,7 +60,7 @@ export default function ConnectRequestModal({
       await sendConnectionRequest(member.user_id, msg);
       bumpQuota(); // refresh the nav quota indicator
       notify(
-        `Request sent to ${member.full_name}. You'll be notified when they respond.`,
+        `Request sent to ${member.full_name}. They'll be notified and can accept to connect.`,
         "success",
         3500,
       );
@@ -75,10 +82,10 @@ export default function ConnectRequestModal({
         <div className="mb-3 flex items-start justify-between">
           <div>
             <h3 className="text-base font-semibold text-brand-navy">
-              Connect with {member.full_name}
+              Reach out to {member.full_name}
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Send a short note with your request.
+              Why are you reaching out?
             </p>
           </div>
           <button
@@ -92,23 +99,22 @@ export default function ConnectRequestModal({
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value.slice(0, MAX))}
-          rows={4}
-          placeholder="Say hello and why you'd like to connect…"
+          rows={3}
+          placeholder="Your reason, in a sentence."
           className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
         />
         <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-          <span>
-            {remaining != null &&
-              `${remaining} request${remaining === 1 ? "" : "s"} left this week`}
-          </span>
-          <span>
-            {message.length}/{MAX}
+          <span>{remaining != null && `${remaining} left this week`}</span>
+          <span className={tooShort ? "text-brand-blue" : ""}>
+            {tooShort
+              ? `${MIN - message.trim().length} more characters`
+              : `${message.length}/${MAX}`}
           </span>
         </div>
 
         <button
           onClick={submit}
-          disabled={sending || noneLeft}
+          disabled={sending || noneLeft || tooShort}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-blue py-2.5 text-sm font-medium text-white hover:bg-brand-blue-600 disabled:opacity-50"
         >
           <Send size={15} />
