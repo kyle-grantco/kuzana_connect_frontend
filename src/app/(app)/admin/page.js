@@ -185,6 +185,17 @@ export default function AdminDashboard() {
             initial="this_week"
             seed={activeSeed}
           />
+          <Stat
+            label="Returning (WAU)"
+            value={eng.returning_wau ?? 0}
+            pct={eng.returning_pct ?? null}
+            sub="of weekly actives (joined > 7d ago)"
+          />
+          <Stat
+            label="Stickiness"
+            value={eng.stickiness_pct == null ? "—" : eng.stickiness_pct + "%"}
+            sub="weekly actives ÷ all members"
+          />
           <MetricCard
             label="Active"
             metric="active"
@@ -193,16 +204,6 @@ export default function AdminDashboard() {
             monthsBack={6}
             allowCustom
             seed={activeSeed}
-          />
-          <Stat
-            label="Returning (WAU)"
-            value={eng.returning_wau ?? 0}
-            sub="joined > 7d ago"
-          />
-          <Stat
-            label="Stickiness"
-            value={eng.stickiness_pct == null ? "—" : eng.stickiness_pct + "%"}
-            sub="WAU ÷ active members"
           />
         </div>
       </section>
@@ -265,7 +266,7 @@ export default function AdminDashboard() {
       {/* Profiles */}
       <section>
         <h2 className="mb-3 text-sm font-semibold text-slate-500">Profiles</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <Stat label="Fully complete" value={p.done.count} pct={p.done.pct} />
           <Stat
             label="Basic only"
@@ -284,6 +285,12 @@ export default function AdminDashboard() {
             value={p.searchable.count}
             pct={p.searchable.pct}
             sub="basic + fully complete"
+          />
+          <Stat
+            label="With traction"
+            value={p.with_traction?.count ?? 0}
+            pct={p.with_traction?.pct ?? null}
+            sub="added their traction"
           />
         </div>
       </section>
