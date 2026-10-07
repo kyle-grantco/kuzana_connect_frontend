@@ -15,17 +15,29 @@ import { logout } from "@/app/lib/logout";
 import { getMyProfile } from "@/app/lib/profileService";
 import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import { useProfileStatus } from "@/app/store/profileStatusStore";
 import NotificationBell from "@/app/components/app/NotificationBell";
 import ConnectionQuota from "@/app/components/app/ConnectionQuota";
+import Banner from "@/app/components/ui/Banner";
 
 // Authed app shell: top bar (logo + notifications + account menu) + centered
 // content area. Wrap the directory, profile view, etc. with this.
+//
+// Also hosts app-wide comms banners (profile nudges, announcements). The
+// traction nudge shows when the member's profile has no traction yet; the
+// condition comes from the profile store (set by the (app) guard layout), so
+// no extra fetch is needed here. Banners are dismissible per session and
+// reappear on next login until the member acts.
 export default function AppShell({ children }) {
   const router = useRouter();
   const { notify } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const [me, setMe] = useState(null);
   const menuRef = useRef(null);
+
+  const profileLoaded = useProfileStatus((s) => s.loaded);
+  const hasTraction = useProfileStatus((s) => s.hasTraction);
+  const isSearchable = useProfileStatus((s) => s.isSearchable);
 
   useEffect(() => {
     getMyProfile()
@@ -155,7 +167,19 @@ export default function AppShell({ children }) {
       </header>
 
       {/* content */}
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        {/* App-wide comms banners. Traction nudge: only for members who've set
+            up a profile (searchable) but have no traction yet. */}
+        <Banner
+          id="add-traction"
+          type="update"
+          show={profileLoaded && isSearchable && !hasTraction}
+          message="New: add your traction, where your business is at. It gives your matches useful context."
+          ctaLabel="Add it"
+          ctaHref="/profile/edit#traction"
+        />
+        <div className="mt-4 first:mt-0">{children}</div>
+      </main>
     </div>
   );
 }

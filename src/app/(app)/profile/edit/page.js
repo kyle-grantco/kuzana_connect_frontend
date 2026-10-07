@@ -54,6 +54,7 @@ export default function EditProfilePage() {
           title: p.title || "",
           business_name: p.business_name || "",
           intro: p.intro || "",
+          traction: p.traction || "",
           location: p.location || "",
           industry_ids: (p.industries || []).map((i) => i.id),
           offerings: p.offerings || [],
@@ -67,6 +68,21 @@ export default function EditProfilePage() {
       })
       .catch(() => setError("Couldn't load your profile."));
   }, []);
+
+  // When arriving via a deep link (e.g. /profile/edit#traction from a nudge
+  // banner), scroll to and briefly focus the target section once the form has
+  // loaded. The #hash alone can miss because the fields mount after fetch.
+  useEffect(() => {
+    if (!form) return;
+    const hash = window.location.hash?.slice(1);
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const field = el.querySelector("textarea, input");
+      if (field) setTimeout(() => field.focus(), 350);
+    }
+  }, [form]);
 
   if (!form) {
     return <p className="py-16 text-center text-sm text-slate-400">Loading…</p>;
@@ -128,6 +144,7 @@ export default function EditProfilePage() {
         title: form.title.trim(),
         business_name: form.business_name.trim() || null,
         intro: form.intro.trim() || null,
+        traction: form.traction.trim() || null,
         location: form.location.trim(),
         industry_ids: form.industry_ids,
         offerings: form.offerings,
@@ -176,26 +193,32 @@ export default function EditProfilePage() {
         </h1>
 
         <div className="space-y-4">
-          <Input
-            label="Who are you?"
-            value={form.title}
-            onChange={update("title")}
-            placeholder="e.g. Founder, HR Consultant, Investor"
-          />
-          <Input
-            label="Business name (optional)"
-            value={form.business_name}
-            onChange={update("business_name")}
-            placeholder="Your business or company name"
-          />
-          <Input
-            label="Location"
-            value={form.location}
-            onChange={update("location")}
-            placeholder="City or town, e.g. Nairobi"
-          />
+          <div id="title" className="scroll-mt-24">
+            <Input
+              label="Who are you?"
+              value={form.title}
+              onChange={update("title")}
+              placeholder="e.g. Founder, HR Consultant, Investor"
+            />
+          </div>
+          <div id="business-name" className="scroll-mt-24">
+            <Input
+              label="Business name (optional)"
+              value={form.business_name}
+              onChange={update("business_name")}
+              placeholder="Your business or company name"
+            />
+          </div>
+          <div id="location" className="scroll-mt-24">
+            <Input
+              label="Location"
+              value={form.location}
+              onChange={update("location")}
+              placeholder="City or town, e.g. Nairobi"
+            />
+          </div>
 
-          <div>
+          <div id="industry" className="scroll-mt-24">
             <span className="mb-1.5 block text-xs font-medium text-slate-600">
               Industry
             </span>
@@ -206,7 +229,7 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <div>
+          <div id="offerings" className="scroll-mt-24">
             <span className="mb-0.5 block text-xs font-medium text-slate-600">
               What can you offer or help with?
             </span>
@@ -222,13 +245,13 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <div>
+          <div id="looking-for" className="scroll-mt-24">
             <span className="mb-0.5 block text-xs font-medium text-slate-600">
-              What are you working on or need help with?
+              What are you looking for?
             </span>
             <p className="mb-1.5 text-[11px] text-slate-400">
-              What you're trying to do, or where you're stuck. e.g. marketing my
-              product on a small budget, hiring a technical co-founder
+              What you need or want help with. e.g. distribution partners, a
+              technical co-founder, marketing support
             </p>
             <ChipInput
               value={form.looking_for}
@@ -237,7 +260,7 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <div>
+          <div id="intro" className="scroll-mt-24">
             <span className="mb-0.5 block text-xs font-medium text-slate-600">
               Short intro (optional)
             </span>
@@ -254,30 +277,55 @@ export default function EditProfilePage() {
             />
           </div>
 
-          <PhotoUpload
-            value={form.photo_url}
-            onChange={(url) => set("photo_url", url)}
-          />
-          <Input
-            label="Primary link (optional)"
-            value={form.primary_link}
-            onChange={(e) => {
-              set("primary_link", e.target.value);
-              if (e.target.value.trim()) setContactWarned(false);
-            }}
-            placeholder="Your website or portfolio"
-          />
-          <Input
-            label="LinkedIn (optional)"
-            value={form.links?.linkedin || ""}
-            onChange={(e) => {
-              set("links", { ...form.links, linkedin: e.target.value });
-              if (e.target.value.trim()) setContactWarned(false);
-            }}
-            placeholder="Your LinkedIn profile link"
-          />
+          <div id="traction" className="scroll-mt-24">
+            <span className="mb-0.5 block text-xs font-medium text-slate-600">
+              Traction (optional)
+            </span>
+            <p className="mb-1.5 text-[11px] text-slate-400">
+              Where your business is at, whatever you're comfortable sharing:
+              stage, revenue range, size, volume, key clients. It gives your
+              matches useful context.
+            </p>
+            <textarea
+              value={form.traction}
+              onChange={update("traction")}
+              rows={3}
+              maxLength={300}
+              placeholder="e.g. 2 years in, 100mt harvested annually, supplying 3 export partners"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+            />
+          </div>
 
-          <div>
+          <div id="photo" className="scroll-mt-24">
+            <PhotoUpload
+              value={form.photo_url}
+              onChange={(url) => set("photo_url", url)}
+            />
+          </div>
+          <div id="primary-link" className="scroll-mt-24">
+            <Input
+              label="Primary link (optional)"
+              value={form.primary_link}
+              onChange={(e) => {
+                set("primary_link", e.target.value);
+                if (e.target.value.trim()) setContactWarned(false);
+              }}
+              placeholder="Your website or portfolio"
+            />
+          </div>
+          <div id="linkedin" className="scroll-mt-24">
+            <Input
+              label="LinkedIn (optional)"
+              value={form.links?.linkedin || ""}
+              onChange={(e) => {
+                set("links", { ...form.links, linkedin: e.target.value });
+                if (e.target.value.trim()) setContactWarned(false);
+              }}
+              placeholder="Your LinkedIn profile link"
+            />
+          </div>
+
+          <div id="contact" className="scroll-mt-24">
             <span className="mb-1.5 block text-xs font-medium text-slate-600">
               How can members reach you?
             </span>

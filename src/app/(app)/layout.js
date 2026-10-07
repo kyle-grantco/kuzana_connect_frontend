@@ -54,7 +54,7 @@ export default function AppLayout({ children }) {
         return;
       }
 
-      // load profile completion status for gating
+      // load profile completion status for gating (+ traction for the nudge)
       try {
         const me = await getMyProfile();
         const p = me?.profile;
@@ -63,6 +63,7 @@ export default function AppLayout({ children }) {
           completionStatus: p?.completion_status || "pending",
           memberNumber: me?.user?.member_number ?? null,
           fullName: me?.user?.full_name || "",
+          hasTraction: !!(p?.traction && String(p.traction).trim()),
         });
       } catch {
         setStatus({ isSearchable: false, completionStatus: "pending" });

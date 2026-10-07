@@ -9,6 +9,7 @@ export const EMPTY = {
   title: "",
   business_name: "",
   intro: "",
+  traction: "",
   location: "",
   industry_ids: [],
   offerings: [],

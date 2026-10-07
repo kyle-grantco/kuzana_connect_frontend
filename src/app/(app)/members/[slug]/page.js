@@ -388,6 +388,17 @@ export default function MemberProfilePage() {
             </div>
           )}
 
+          {member.traction && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-2 text-xs font-semibold text-slate-500">
+                Traction
+              </div>
+              <p className="break-words text-sm leading-relaxed text-slate-600">
+                {member.traction}
+              </p>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             {member.industries?.length > 0 && (
               <div className="mb-5">

@@ -81,6 +81,11 @@ export default function OnboardingPage() {
   const { notify } = useNotificationStore();
   const setProfileStatus = useProfileStatus((s) => s.setStatus);
 
+  // 3 steps (cosmetic): steps 1-2 together are the MVP (saved at the end of
+  // step 2, unchanged backend). Step 3 is enrichment. The MVP fields are split
+  // across steps 1 (identity) and 2 (business substance + contact); nothing
+  // about the MVP save/validation/nudge changed, only how the fields are laid
+  // out across screens.
   const [step, setStep] = useState(1);
   // Start from a stable default so server and client render identically. The
   // saved draft lives in localStorage (client-only); loading it during initial
@@ -135,11 +140,11 @@ export default function OnboardingPage() {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const update = (k) => (e) => set(k, e.target.value);
 
-  // A member is "reachable" if any channel is set. On step 1 only the toggles
-  // exist; on step 2 a link (primary or LinkedIn) also counts.
-  const hasStep1Contact = !!form.contact_whatsapp || !!form.contact_email;
+  // A member is "reachable" if any channel is set. On steps 1-2 only the
+  // toggles exist; on step 3 a link (primary or LinkedIn) also counts.
+  const hasToggleContact = !!form.contact_whatsapp || !!form.contact_email;
   const hasAnyContact =
-    hasStep1Contact ||
+    hasToggleContact ||
     !!(form.primary_link && form.primary_link.trim()) ||
     !!(form.links?.linkedin && form.links.linkedin.trim());
 
@@ -165,30 +170,47 @@ export default function OnboardingPage() {
     router.replace("/members?from=onboarding");
   }
 
-  // Hard validations only (these block). Contact is handled separately as a
-  // warn-once nudge, not a hard block.
+  // Step 1 validation (identity fields). Blocks advancing to step 2.
   function validateStep1() {
     if (!form.title.trim()) return "Tell us who you are.";
     if (!form.location.trim()) return "Add your location.";
     if (form.industry_ids.length === 0) return "Pick at least one industry.";
+    return "";
+  }
+
+  // Step 2 validation (business substance). Blocks the MVP save.
+  function validateStep2() {
     if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
     return "";
   }
 
-  async function submitMvp({ exit }) {
+  // Step 1 -> Step 2: just advance (identity validated, no save yet).
+  function nextFromStep1() {
     const v = validateStep1();
     if (v) {
       setError(v);
       return;
     }
     setError("");
+    setStep(2);
+  }
 
-    // Contact nudge: if no channel chosen and not yet warned, warn and stop.
-    // A second click (still no channel) proceeds. Adding a channel clears it.
-    if (!hasStep1Contact && !contactWarned) {
-      setError(""); // don't stack a red error under the amber nudge
+  // Step 2 -> save MVP (unchanged) -> advance to enrichment. The contact nudge
+  // is unchanged: if no contact channel and not yet warned, warn and stop; a
+  // second Continue proceeds.
+  async function submitMvp({ exit }) {
+    const v = validateStep2();
+    if (v) {
+      setError(v);
+      return;
+    }
+    setError("");
+
+    // Contact nudge (unchanged): warn once if no channel chosen.
+    if (!hasToggleContact && !contactWarned) {
+      setError("");
       setContactWarned(true);
       return;
     }
@@ -199,6 +221,7 @@ export default function OnboardingPage() {
         title: form.title.trim(),
         business_name: form.business_name.trim() || null,
         intro: form.intro.trim() || null,
+        traction: form.traction.trim() || null,
         location: form.location.trim(),
         industry_ids: form.industry_ids,
         offerings: form.offerings,
@@ -212,8 +235,8 @@ export default function OnboardingPage() {
         notify("Profile saved.", "success", 3000);
         await goToMainPage();
       } else {
-        setContactWarned(false); // reset for step 2's own check
-        setStep(2);
+        setContactWarned(false); // reset for step 3's own check
+        setStep(3);
       }
     } catch (err) {
       setError(errorMessage(err));
@@ -225,8 +248,8 @@ export default function OnboardingPage() {
   async function finish() {
     setError("");
 
-    // Final contact nudge: if there's no channel at all (no toggles AND no
-    // links), warn once, then allow finishing on the next click.
+    // Final contact nudge (unchanged): if there's no channel at all (no toggles
+    // AND no links), warn once, then allow finishing on the next click.
     if (!hasAnyContact && !contactWarned) {
       setContactWarned(true);
       return;
@@ -260,7 +283,7 @@ export default function OnboardingPage() {
 
   return (
     <Card>
-      <ProgressBar percent={step === 1 ? 40 : 80} />
+      <ProgressBar percent={step === 1 ? 33 : step === 2 ? 66 : 100} />
 
       {step === 1 ? (
         <div className="space-y-4">
@@ -303,6 +326,24 @@ export default function OnboardingPage() {
             )}
           </div>
 
+          {error && <p className="text-xs text-brand-red">{error}</p>}
+
+          <div className="pt-1">
+            <Button onClick={nextFromStep1} loading={loading}>
+              <span className="flex items-center gap-2">
+                Continue <ArrowRight size={16} />
+              </span>
+            </Button>
+          </div>
+        </div>
+      ) : step === 2 ? (
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-lg font-semibold text-brand-navy">
+              Your business
+            </h1>
+          </div>
+
           <div>
             <FieldLabel hint="What you do, or what you can help other members with. e.g. helping founders land their first customers, building websites for small businesses">
               What can you offer or help with?
@@ -315,8 +356,8 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="What you're trying to do, or where you're stuck. e.g. marketing my product on a small budget, hiring a technical co-founder">
-              What are you working on or need help with?
+            <FieldLabel hint="What you need or want help with. e.g. distribution partners, a technical co-founder, marketing support">
+              What are you looking for?
             </FieldLabel>
             <ChipInput
               value={form.looking_for}
@@ -335,6 +376,20 @@ export default function OnboardingPage() {
               rows={4}
               maxLength={400}
               placeholder="e.g. I run a solar business installing systems for homes and small shops across central Kenya"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+            />
+          </div>
+
+          <div>
+            <FieldLabel hint="Where your business is at, whatever you're comfortable sharing: stage, revenue range, size, volume, key clients. It gives your matches useful context.">
+              Traction (optional)
+            </FieldLabel>
+            <textarea
+              value={form.traction}
+              onChange={update("traction")}
+              rows={3}
+              maxLength={300}
+              placeholder="e.g. 2 years in, 100mt harvested annually, supplying 3 export partners"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-brand-ink placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
             />
           </div>
@@ -369,7 +424,7 @@ export default function OnboardingPage() {
           </div>
 
           {error && <p className="text-xs text-brand-red">{error}</p>}
-          {contactWarned && !hasStep1Contact && (
+          {contactWarned && !hasToggleContact && (
             <ContactNotice>
               No contact method selected. Add WhatsApp or email, or a LinkedIn
               or website on the next step. Tap Continue again to proceed anyway.
@@ -391,6 +446,19 @@ export default function OnboardingPage() {
               disabled={loading}
             >
               Save &amp; exit
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setError("");
+                setContactWarned(false);
+                setStep(1);
+              }}
+              disabled={loading}
+            >
+              <span className="flex items-center gap-2">
+                <ArrowLeft size={16} /> Back
+              </span>
             </Button>
           </div>
         </div>
@@ -442,7 +510,7 @@ export default function OnboardingPage() {
               variant="ghost"
               onClick={() => {
                 setContactWarned(false);
-                setStep(1);
+                setStep(2);
               }}
               disabled={loading}
             >
