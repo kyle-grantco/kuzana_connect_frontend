@@ -119,7 +119,7 @@ export default function ConnectRequestModal({
         >
           <Send size={15} />
           {noneLeft
-            ? "No requests left this week"
+            ? "No requests left · resets Monday"
             : sending
               ? "Sending…"
               : "Send request"}

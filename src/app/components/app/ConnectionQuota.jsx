@@ -2,7 +2,8 @@
 
 // Small, quiet indicator of remaining weekly connection requests. Shown in the
 // top nav so members spend their requests deliberately. Not loud — it's a cap
-// reminder, not a countdown. Links to the requests page.
+// reminder, not a countdown. Links to the requests page. The weekly reset
+// ("resets Monday") lives in the tooltip so the nav stays minimal.
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,7 +30,7 @@ export default function ConnectionQuota() {
   return (
     <button
       onClick={() => router.push("/connections/requests")}
-      title={`${remaining} of ${limit} connection requests left this week`}
+      title={`${remaining} of ${limit} connection requests left this week · resets Monday`}
       className={
         "hidden items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:inline-flex " +
         (low

@@ -36,7 +36,7 @@ export default function ConnectionRequestsPage() {
       {quota && typeof quota.remaining === "number" && (
         <p className="mb-4 text-xs text-slate-400">
           You can send {quota.limit} connection request
-          {quota.limit === 1 ? "" : "s"} a week.{" "}
+          {quota.limit === 1 ? "" : "s"} a week, resets Monday.{" "}
           <span className="font-medium text-slate-500">
             {quota.remaining} left this week.
           </span>
