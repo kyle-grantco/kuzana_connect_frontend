@@ -288,9 +288,7 @@ export default function OnboardingPage() {
       {step === 1 ? (
         <div className="space-y-4">
           <div>
-            <h1 className="text-lg font-semibold text-brand-navy">
-              Let&apos;s get to know you
-            </h1>
+            <h1 className="text-lg font-semibold text-brand-navy">About you</h1>
           </div>
 
           <Input
