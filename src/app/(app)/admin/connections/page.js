@@ -2,7 +2,8 @@
 
 // Route: /admin/connections
 // The full connection-request activity: who requested whom, status, when.
-// The real "is the loop working" view. Names link to member profiles.
+// The real "is the loop working" view. Names link to member profiles, and the
+// member's phone sits under the name so admin can follow up without a lookup.
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -72,6 +73,25 @@ export default function AdminConnectionsPage() {
     });
   }
 
+  // name + phone-under-name cell, so admin can follow up without a lookup
+  function PersonCell({ p }) {
+    return (
+      <div>
+        <button
+          onClick={() => openProfile(p)}
+          className="text-left font-medium text-brand-navy hover:text-brand-blue"
+        >
+          {p?.full_name || "—"}
+        </button>
+        {p?.whatsapp_number && (
+          <div className="mt-0.5 text-[11px] text-slate-400">
+            {p.whatsapp_number}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
@@ -129,26 +149,16 @@ export default function AdminConnectionsPage() {
                     key={r.id}
                     className="border-b border-slate-50 last:border-0"
                   >
-                    <td className="px-4 py-2.5">
-                      <button
-                        onClick={() => openProfile(r.requester)}
-                        className="text-left font-medium text-brand-navy hover:text-brand-blue"
-                      >
-                        {r.requester?.full_name || "—"}
-                      </button>
+                    <td className="px-4 py-2.5 align-top">
+                      <PersonCell p={r.requester} />
                     </td>
-                    <td className="px-2 py-2.5 text-slate-300">
+                    <td className="px-2 py-2.5 align-top text-slate-300">
                       <ArrowRight size={14} />
                     </td>
-                    <td className="px-4 py-2.5">
-                      <button
-                        onClick={() => openProfile(r.recipient)}
-                        className="text-left font-medium text-brand-navy hover:text-brand-blue"
-                      >
-                        {r.recipient?.full_name || "—"}
-                      </button>
+                    <td className="px-4 py-2.5 align-top">
+                      <PersonCell p={r.recipient} />
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-2.5 align-top">
                       <span
                         className={
                           "rounded-full px-2 py-0.5 text-[11px] " +
@@ -159,10 +169,10 @@ export default function AdminConnectionsPage() {
                         {r.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-slate-500">
+                    <td className="px-4 py-2.5 align-top text-xs text-slate-500">
                       {fmt(r.created_at)}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-slate-500">
+                    <td className="px-4 py-2.5 align-top text-xs text-slate-500">
                       {fmt(r.responded_at)}
                     </td>
                   </tr>
