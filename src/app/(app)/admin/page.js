@@ -208,28 +208,58 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Connection activity */}
+      {/* Connection activity — period-aware so the rate can be read against
+          absolute volume (requests vs accepts over the same window), and pending
+          split by age to tell a fresh backlog (lag) from a stale one (a leak). */}
       {req && (
         <section>
           <h2 className="mb-3 text-sm font-semibold text-slate-500">
             Connection activity
           </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat
+
+          {/* per-period cards: requested vs accepted over the same window */}
+          <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:max-w-xl">
+            <MetricCard
               label="Requests sent"
-              value={req.total}
-              sub="all connection requests"
+              metric="connections_requested"
+              options={["today", "this_week", "last_week"]}
+              initial="this_week"
+              monthsBack={3}
+              allowCustom
             />
+            <MetricCard
+              label="Accepted"
+              metric="connections_accepted"
+              options={["today", "this_week", "last_week"]}
+              initial="this_week"
+              monthsBack={3}
+              allowCustom
+            />
+          </div>
+
+          {/* all-time totals + pending-by-age */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+            <Stat label="Requests sent" value={req.total} sub="all time" />
             <Stat
               label="Accepted"
               value={req.accepted}
               pct={req.acceptance_rate}
-              sub="of all sent (became connections)"
+              sub="all time"
             />
             <Stat
               label="Pending"
               value={req.pending}
               sub="awaiting a response"
+            />
+            <Stat
+              label="Pending (fresh)"
+              value={req.pending_fresh ?? 0}
+              sub="sent in last 7 days"
+            />
+            <Stat
+              label="Pending (stale)"
+              value={req.pending_stale ?? 0}
+              sub="older than 7 days"
             />
             <Stat label="Declined" value={req.declined} sub="turned down" />
           </div>

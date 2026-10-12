@@ -98,9 +98,13 @@ export default function MetricCard({
   seed,
   suffix = "",
 }) {
+  // Depend on a STABLE key (joined string), not the array reference: the parent
+  // passes a fresh `options` literal every render, which would otherwise recompute
+  // `opts` each time and snap an open native <select> shut.
+  const optionsKey = options.join("|");
   const opts = useMemo(
     () => buildOptions(options, monthsBack),
-    [options, monthsBack],
+    [optionsKey, monthsBack], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const [key, setKey] = useState(initial || options[0]);
   const [customFrom, setCustomFrom] = useState("");
