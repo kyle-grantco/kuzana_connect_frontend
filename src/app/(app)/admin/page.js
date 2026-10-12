@@ -6,9 +6,9 @@ import { useEffect, useState, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import { getMetrics } from "@/app/lib/adminService";
 import MetricCard from "@/app/components/admin/MetricCard";
+import ActivationCard from "@/app/components/admin/ActivationCard";
 
 function Stat({ label, value, sub, pct, soon }) {
-  //
   return (
     <div
       className={
@@ -90,6 +90,8 @@ export default function AdminDashboard() {
     this_week: eng.wau ?? 0,
     this_month: eng.mau ?? 0,
   };
+  // discoverable seed: the all-time searchable count isn't period-matched, so
+  // the activation cards fetch their own values; no seed passed (they load live).
 
   return (
     <div className="space-y-8">
@@ -108,48 +110,16 @@ export default function AdminDashboard() {
       <section>
         <h2 className="mb-3 text-sm font-semibold text-slate-500">Accounts</h2>
 
-        {/* New members + how many of them became discoverable (activation).
-            Each new-members card is paired with a discoverable card on the same
-            period, so "joined vs discoverable" reads as the activation rate. */}
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <MetricCard
-            label="New members"
-            metric="new_members"
-            options={["today", "yesterday"]}
-            initial="today"
-            seed={newSeed}
-          />
-          <MetricCard
-            label="Discoverable"
-            metric="discoverable"
-            options={["today", "yesterday"]}
-            initial="today"
-          />
-          <MetricCard
-            label="New members"
-            metric="new_members"
-            options={["this_week", "last_week"]}
-            initial="this_week"
-            seed={newSeed}
-          />
-          <MetricCard
-            label="Discoverable"
-            metric="discoverable"
+        {/* New members + how many became discoverable, one card per period.
+            Shows "new / discoverable (activation %)" so acquisition and
+            activation read together without doubling the card count. */}
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-2xl">
+          <ActivationCard options={["today", "yesterday"]} initial="today" />
+          <ActivationCard
             options={["this_week", "last_week"]}
             initial="this_week"
           />
-          <MetricCard
-            label="New members"
-            metric="new_members"
-            options={["this_month"]}
-            initial="this_month"
-            monthsBack={6}
-            allowCustom
-            seed={newSeed}
-          />
-          <MetricCard
-            label="Discoverable"
-            metric="discoverable"
+          <ActivationCard
             options={["this_month"]}
             initial="this_month"
             monthsBack={6}
