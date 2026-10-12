@@ -107,14 +107,22 @@ export default function AdminDashboard() {
       <section>
         <h2 className="mb-3 text-sm font-semibold text-slate-500">Accounts</h2>
 
-        {/* New members — three fixed cards, each with its own period dropdown */}
-        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-2xl">
+        {/* New members + how many of them became discoverable (activation).
+            Each new-members card is paired with a discoverable card on the same
+            period, so "joined vs discoverable" reads as the activation rate. */}
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <MetricCard
             label="New members"
             metric="new_members"
             options={["today", "yesterday"]}
             initial="today"
             seed={newSeed}
+          />
+          <MetricCard
+            label="Discoverable"
+            metric="discoverable"
+            options={["today", "yesterday"]}
+            initial="today"
           />
           <MetricCard
             label="New members"
@@ -124,6 +132,12 @@ export default function AdminDashboard() {
             seed={newSeed}
           />
           <MetricCard
+            label="Discoverable"
+            metric="discoverable"
+            options={["this_week", "last_week"]}
+            initial="this_week"
+          />
+          <MetricCard
             label="New members"
             metric="new_members"
             options={["this_month"]}
@@ -131,6 +145,14 @@ export default function AdminDashboard() {
             monthsBack={6}
             allowCustom
             seed={newSeed}
+          />
+          <MetricCard
+            label="Discoverable"
+            metric="discoverable"
+            options={["this_month"]}
+            initial="this_month"
+            monthsBack={6}
+            allowCustom
           />
         </div>
 
