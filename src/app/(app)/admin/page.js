@@ -149,6 +149,12 @@ export default function AdminDashboard() {
             sub="verified and in good standing"
           />
           <Stat
+            label="Discoverable"
+            value={p.searchable.count}
+            pct={p.searchable.pct}
+            sub="active with a usable profile"
+          />
+          <Stat
             label="Pending"
             value={a.pending}
             sub="registered but never verified"
@@ -159,7 +165,6 @@ export default function AdminDashboard() {
             sub="blocked by an admin"
           />
           <Stat label="Deleted" value={a.deleted} sub="removed accounts" />
-          <Stat label="Logged in" soon />
         </div>
       </section>
 
