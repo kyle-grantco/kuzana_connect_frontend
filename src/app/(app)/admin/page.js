@@ -42,12 +42,16 @@ export default function AdminDashboard() {
   const [m, setM] = useState(null);
   const [err, setErr] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  // bumped on every load/refresh so the period cards (MetricCard/ActivationCard)
+  // refetch too — they fetch independently of getMetrics.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
       const data = await getMetrics();
       setM(data);
+      setRefreshKey((k) => k + 1);
       setErr("");
     } catch {
       setErr("Couldn't load metrics.");
@@ -114,16 +118,22 @@ export default function AdminDashboard() {
             Shows "new / discoverable (activation %)" so acquisition and
             activation read together without doubling the card count. */}
         <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:max-w-2xl">
-          <ActivationCard options={["today", "yesterday"]} initial="today" />
+          <ActivationCard
+            options={["today", "yesterday"]}
+            initial="today"
+            refreshKey={refreshKey}
+          />
           <ActivationCard
             options={["this_week", "last_week"]}
             initial="this_week"
+            refreshKey={refreshKey}
           />
           <ActivationCard
             options={["this_month"]}
             initial="this_month"
             monthsBack={6}
             allowCustom
+            refreshKey={refreshKey}
           />
         </div>
 
@@ -170,6 +180,7 @@ export default function AdminDashboard() {
             options={["today", "yesterday"]}
             initial="today"
             seed={activeSeed}
+            refreshKey={refreshKey}
           />
           <MetricCard
             label="Active"
@@ -177,6 +188,7 @@ export default function AdminDashboard() {
             options={["this_week", "last_week"]}
             initial="this_week"
             seed={activeSeed}
+            refreshKey={refreshKey}
           />
           <Stat
             label="Returning (WAU)"
@@ -197,6 +209,7 @@ export default function AdminDashboard() {
             monthsBack={6}
             allowCustom
             seed={activeSeed}
+            refreshKey={refreshKey}
           />
         </div>
       </section>
@@ -219,6 +232,7 @@ export default function AdminDashboard() {
               initial="this_week"
               monthsBack={3}
               allowCustom
+              refreshKey={refreshKey}
             />
             <MetricCard
               label="Accepted"
@@ -227,6 +241,7 @@ export default function AdminDashboard() {
               initial="this_week"
               monthsBack={3}
               allowCustom
+              refreshKey={refreshKey}
             />
           </div>
 

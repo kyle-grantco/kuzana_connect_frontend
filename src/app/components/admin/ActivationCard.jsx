@@ -84,6 +84,7 @@ export default function ActivationCard({
   allowCustom = false,
   seedNew, // optional { [presetKey]: number }
   seedDiscoverable,
+  refreshKey = 0,
 }) {
   const optionsKey = options.join("|");
   const opts = useMemo(
@@ -138,6 +139,17 @@ export default function ActivationCard({
     if (key === "custom") return;
     fetchFor(presetRange(key));
   }, [key]); // eslint-disable-line
+
+  const didMountRefresh = useRef(false);
+  useEffect(() => {
+    if (!didMountRefresh.current) {
+      didMountRefresh.current = true;
+      return;
+    }
+    if (key === "custom") return;
+    usedSeed.current = false;
+    fetchFor(presetRange(key));
+  }, [refreshKey]); // eslint-disable-line
 
   const showCustom = allowCustom && key === "custom";
   const pct = vals && vals.n > 0 ? Math.round((vals.d / vals.n) * 100) : null;

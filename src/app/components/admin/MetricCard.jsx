@@ -97,6 +97,7 @@ export default function MetricCard({
   allowCustom = false,
   seed,
   suffix = "",
+  refreshKey = 0,
 }) {
   // Depend on a STABLE key (joined string), not the array reference: the parent
   // passes a fresh `options` literal every render, which would otherwise recompute
@@ -147,6 +148,20 @@ export default function MetricCard({
     if (key === "custom") return; // wait for Apply
     fetchFor(presetRange(key));
   }, [key]); // eslint-disable-line
+
+  // Refetch when the dashboard's Refresh button bumps refreshKey. Skip the very
+  // first render (refreshKey starts at 0 and the mount effect above already
+  // handled the initial fetch/seed).
+  const didMountRefresh = useRef(false);
+  useEffect(() => {
+    if (!didMountRefresh.current) {
+      didMountRefresh.current = true;
+      return;
+    }
+    if (key === "custom") return;
+    usedSeed.current = false; // a manual refresh should always refetch
+    fetchFor(presetRange(key));
+  }, [refreshKey]); // eslint-disable-line
 
   const showCustomInputs = allowCustom && key === "custom";
 

@@ -2,7 +2,7 @@
 
 Next.js (App Router) client for **Kuzana Connect**, a member-discovery and
 trusted-introduction network for the Kuzana community (Kenyan founders / SME
-operators).
+operators). ~260 members.
 
 Members sign in with a WhatsApp OTP, build a profile describing what they offer and
 what they're looking for, see proactively computed **suggestions** of complementary
@@ -29,6 +29,7 @@ Tailwind CSS v4 · Zustand · axios · lucide-react · libphonenumber-js.
 - [The auth guard](#the-auth-guard)
 - [State management](#state-management)
 - [Key flows](#key-flows)
+- [Admin dashboard](#admin-dashboard)
 - [Styling](#styling)
 - [Environment variables](#environment-variables)
 - [Deployment](#deployment)
@@ -47,37 +48,34 @@ The backend must be running at `http://localhost:8000` (or set
 `NEXT_PUBLIC_API_URL`). Because cookies drive auth, three things matter:
 
 - The backend must **not** have `ENV=production`, or cookies are issued
-  `Secure; SameSite=None` and the browser drops them over plain HTTP — you'll
-  appear logged out immediately after logging in.
+  `Secure; SameSite=None` and the browser drops them over plain HTTP.
 - The backend's `CORS_ORIGINS` must include `http://localhost:3000` exactly, no
   trailing slash.
-- Use `localhost` consistently. Mixing `127.0.0.1` and `localhost` gives you two
-  cookie jars.
+- Use `localhost` consistently (mixing `127.0.0.1` and `localhost` = two cookie
+  jars).
 
-To get past the OTP screen, read the code from the backend's console (Twilio is
-stubbed unless `TWILIO_LIVE=1`). You also need the backend's
-`COMMUNITY_ACCESS_CODE` to register without an invite.
+To get past the OTP screen, read the code from the backend's console. You also need
+the backend's `COMMUNITY_ACCESS_CODE` to register without an invite.
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`.
-Path alias `@/*` → `./src/*`, so imports read `@/app/lib/api`.
+Path alias `@/*` → `./src/*`.
 
 ---
 
 ## Structure and routing
 
-Everything lives under `src/app`. No `pages/`, no API routes, almost no
-server-side code — it's a client-rendered SPA wearing the App Router. Nearly every
-page starts with `"use client"`.
+Everything lives under `src/app`. Client-rendered SPA on the App Router; nearly
+every page starts with `"use client"`.
 
 ```
 src/app/
   layout.js                  root layout: fonts, metadata, <Toaster/>
-  page.js                    public landing page (server component)
+  page.js                    public landing page
   terms/ privacy/            policy pages
   unsubscribe/               public, token-based email opt-out
   feedback/                  public, token-based post-connection feedback
   invite/[token]/            public invite landing (+ server-side OG metadata)
-  welcome/  onboarding/      post-verification screen, 2-step profile creation
+  welcome/  onboarding/      post-verification screen, 3-step profile creation
   auth/                      login, register, verify
 
   (app)/                     ROUTE GROUP: everything behind the auth guard
@@ -90,109 +88,77 @@ src/app/
 
   lib/                       API services + pure helpers
   store/                     Zustand stores
-  components/  app/ auth/ ui/ policy/
+  components/  app/ auth/ ui/ admin/ policy/
 ```
 
-**The `(app)` route group is the security boundary.** It adds no URL segment, but
-every route inside shares `(app)/layout.js`, which runs the auth and
-profile-completion checks before rendering. Anything reachable while logged out
-(landing, auth, invite, unsubscribe, feedback, policies) lives **outside** it.
+**The `(app)` route group is the security boundary** — every route inside shares
+`(app)/layout.js`, which runs the auth and profile-completion checks before
+rendering. Anything reachable while logged out lives **outside** it.
 
 **All server communication goes through `lib/api.js`.** Pages call a function in
-`lib/*Service.js`, never axios directly — that's what guarantees CSRF headers and
-token refresh apply uniformly. Two deliberate exceptions: `PhotoUpload.jsx` uses
-raw `fetch` to PUT to S3 (which must *not* carry our headers), and
-`invite/[token]/page.js` uses server-side `fetch` for OpenGraph metadata before any
-session exists.
+`lib/*Service.js`, never axios directly. Exceptions: `PhotoUpload.jsx` (raw `fetch`
+PUT to S3) and `invite/[token]/page.js` (server-side `fetch` for OG metadata).
 
-Public routes worth knowing: `/invite/[token]` generates OG metadata server-side so
-WhatsApp link previews show the inviter; `/unsubscribe?token=` and
-`/feedback?token=` are opened straight from emails and authenticate with an
-HMAC token instead of a session.
+Public token routes: `/invite/[token]` (OG preview), `/unsubscribe?token=`,
+`/feedback?token=` — opened from emails, authenticated by HMAC token, not a session.
 
 ---
 
 ## The API client
 
-`lib/api.js` is the most important file here. Read it before changing anything
-auth-related.
+`lib/api.js` is the most important file here. Two axios instances, both
+`withCredentials: true`: **`authRequest`** (CSRF inject, refresh-on-401, retry) and
+**`publicRequest`** (pre-auth).
 
-Two axios instances, both `withCredentials: true`:
+**CSRF is double-submit.** The access token is HttpOnly; the client echoes the
+readable `csrf_access_token` cookie as an `X-CSRF-TOKEN` header. The store hydrates
+from that cookie at creation and the interceptor falls back to reading it directly.
 
-- **`authRequest`** — authenticated calls. Injects CSRF, refreshes on 401, retries.
-- **`publicRequest`** — pre-auth calls (register, OTP, refresh, unsubscribe,
-  feedback).
-
-**CSRF is double-submit.** The access token is HttpOnly, so the client never
-handles it; what it must do is echo the readable `csrf_access_token` cookie back as
-an `X-CSRF-TOKEN` header. The store hydrates from that cookie at creation and the
-request interceptor falls back to reading it directly — without that, the first
-request after a page load would 401, refresh, and retry, multiplying requests and
-tripping the server's rate limiter.
-
-**Single-flight refresh — the important part.** When the 15-minute access token
-expires, several in-flight requests 401 at once. Refresh tokens rotate, so
-*overlapping* refreshes are fatal: both carry the same pre-rotation cookie, the
-backend rotates on the first, and the second is a replay of a retired token → 401 →
-forced logout. That was the origin of the long-standing random-logout bug.
-
-The fix shares one refresh promise across every concurrent 401. The guard is
-cleared on a **macrotask** (`setTimeout`), not in `.finally()` — a `.finally()`
-callback runs as a microtask *before* the awaiting interceptor resumes, leaving a
-window where a later 401 saw a null guard and started a second refresh. The
-backend's 15-second rotation grace is the other half of this fix; both halves are
+**Single-flight refresh.** When the 15-minute access token expires, concurrent 401s
+share ONE refresh promise. Refresh tokens rotate, so overlapping refreshes are
+fatal (second replays a retired token → forced logout — the origin of the historic
+random-logout bug). The guard is cleared on a **macrotask** (`setTimeout`), not
+`.finally()`. The backend's 15-second rotation grace is the other half; both are
 needed.
 
-`refreshSession` is **private and deliberately not exported** — it bypasses the
-guard. The only safe way to refresh from outside the module is
-`refreshSessionShared()`.
+`refreshSession` is **private, not exported** — refresh from outside the module
+only via `refreshSessionShared()`.
 
-**On hard auth failure**, `handleAuthFailure()` collapses a burst of failures using
-a 5-second *timestamp* (not a boolean — a latched boolean never reset if the
-redirect didn't complete, silently killing all later expiries), clears both store
-and CSRF cookie (a stale cookie re-hydrates and makes the first login-page action
-fail), toasts, then does a **full-page** navigation to `/auth/login` so module state
-resets.
+**On hard auth failure**, `handleAuthFailure()` collapses a burst using a 5-second
+timestamp, clears store + CSRF cookie, toasts, then does a full-page navigation to
+`/auth/login`.
 
 ---
 
 ## The auth guard
 
 `(app)/layout.js` runs on every guarded route: `checkAuthStatus()`, then
-`getMyProfile()` to populate `profileStatusStore`. It renders a spinner until both
-resolve, so a guarded page never flashes first.
+`getMyProfile()` to populate `profileStatusStore` (now including `hasTraction`,
+read by `AppShell` to show the add-traction banner). Renders a spinner until both
+resolve.
 
-**A `false` from `checkAuthStatus()` is terminal.** It went through `authRequest`,
-whose interceptor already attempted the shared refresh and retried. Refreshing
-again here would be a second, unguarded refresh — the exact random-logout bug.
+**A `false` from `checkAuthStatus()` is terminal** — don't refresh again here (that
+was the random-logout bug). Profile completion is enforced here, not per page.
 
-**Profile completion is enforced here, not per page.** Because the guard runs on
-every `(app)` route and writes `completionStatus` to the store, a member can't
-URL-escape onboarding. Pages read the store and render `LockedTeaser` themselves
-(`overlay` over the directory, `block` for another member's profile — your own is
-always viewable).
-
-The **admin** area adds a second check in `(app)/admin/layout.js` that hides the UI
-from non-admins. It's purely cosmetic — the backend enforces roles on every admin
-endpoint regardless.
+The **admin** area adds a cosmetic check in `(app)/admin/layout.js`; the backend
+enforces roles regardless.
 
 Note a guarded page load fetches `/profiles/me` up to three times (guard,
-`AppShell`, and pages needing role or name). An obvious consolidation target.
+`AppShell`, pages needing role/name) — an obvious consolidation target.
 
 ---
 
 ## State management
 
-Five small Zustand stores in `src/app/store/`. No providers; non-React modules read
-state with `useStore.getState()`.
+Zustand stores in `src/app/store/`:
 
 | store | holds |
 |---|---|
-| `authStore` | `role`, `csrfToken`, `memberNumber`. **Initializes `csrfToken` from the readable cookie** rather than `null` — the cookie is the persistence layer |
-| `profileStatusStore` | completion status written once by the guard, read by pages to decide whether to lock |
-| `notificationStore` | the **toast** system (unrelated to the in-app bell). `notify(msg, type, duration)`; `0` persists until dismissed. Rendered by `<Toaster/>` in the root layout, so `api.js` can toast from outside React |
-| `searchStore` | full directory search snapshot, so returning from a profile doesn't lose the query, filters, or an expensive AI result set. `hasSearched` distinguishes first mount from a restore |
-| `connectionQuotaStore` | a `{version, bump()}` signal so the nav quota refetches after a request is sent, without prop-drilling |
+| `authStore` | `role`, `csrfToken`, `memberNumber`. Initializes `csrfToken` from the readable cookie |
+| `profileStatusStore` | completion status + `hasTraction` (written by the guard, read to lock pages and drive the traction banner) |
+| `notificationStore` | the toast system; `notify(msg, type, duration)`, rendered by `<Toaster/>` so `api.js` can toast from outside React |
+| `searchStore` | directory search snapshot, so returning from a profile keeps query/filters/results |
+| `connectionQuotaStore` | a `{version, bump()}` signal so the nav quota refetches after a request is sent |
 
 ---
 
@@ -201,152 +167,172 @@ state with `useStore.getState()`.
 ### Registration and login
 
 `/invite/[token]` → `/auth/register?invite=TOKEN` → `/auth/verify`, or
-`/auth/login` (phone) → `/auth/verify`.
+`/auth/login` → `/auth/verify`. OTP is keyed by phone number regardless of
+channel. On success, routing keys off `onboarding_status`: `not_started` →
+`/welcome` → `/onboarding`, else `/members`.
 
-Register resolves its invite token once on mount: the query param wins and is
-mirrored to sessionStorage; with neither, the page shows a blocked state. Without
-an invite, the community code is validated on its own step so a wrong code fails
-before account creation.
+### Onboarding (3 steps — CHANGED from 2)
 
-The OTP is always **keyed by phone number** regardless of delivery channel, so
-choosing email doesn't change verification. `/auth/verify` persists its state to
-sessionStorage (surviving the round-trip to WhatsApp), runs a 60s resend ticker, and
-offers a WhatsApp ↔ email channel switch.
+The MVP form is now split cosmetically across **3 steps** (the backend MVP save is
+unchanged — it still fires at the end of step 2):
 
-On success, routing keys off `onboarding_status`: `not_started` → `/welcome` →
-`/onboarding`, anything else → `/members`.
+- **Step 1 "About you":** title, business name, location, industry.
+- **Step 2 "Your business":** offerings, looking-for, intro, **traction (optional,
+  new)**, contact toggles → `POST /profiles/mvp` (makes the member searchable,
+  triggers matching). Save-and-exit available here.
+- **Step 3 "Almost done":** photo, links → `POST /profiles/enrichment`.
 
-### Onboarding
+Progress bar 33/66/100. The **contact nudge is still warn-once, not a block.**
+Draft persists to localStorage (initialized from `EMPTY`, merged post-mount behind
+a `hydrated` flag).
 
-Two steps: `POST /profiles/mvp` (required fields — makes the member searchable and
-triggers backend matching) then optional `POST /profiles/enrichment`.
-
-**The contact nudge is warn-once, not a block.** With no contact channel selected,
-the first Continue shows an amber notice and stops; a second click proceeds. A
-member may legitimately be reachable only via a public link, or not at all.
-
-**Draft persistence:** edits write to localStorage, but the form initializes from
-the exported `EMPTY` constant and merges the draft in a post-mount effect behind a
-`hydrated` flag — reading storage during initial state would break hydration.
+**ChipInput commit-on-blur (fix):** offerings/looking-for chips now auto-commit a
+typed-but-not-added item when the input blurs (moving to the next field or clicking
+Continue), so members who don't click "+" no longer lose input or get wrongly
+blocked.
 
 ### Directory and suggestions (`/members`)
 
-The home screen stacks `SuggestionsSections` (the primary value) above the
-directory and search.
-
-Infinite scroll via `IntersectionObserver`, with results **deduped by
-`member_number`** (the observer can double-fire and new rows shift page offsets).
-`hasMore` excludes AI-expanded results, since an expanded query isn't stable across
-pages. `userChangedRef` distinguishes a user-driven filter change from initial
-mount, so a restored search doesn't refetch.
-
-Suggestions render as **one ranked list**, each card showing the strongest reason by
-`w * sim`, phrased to assert only the *other* member's side ("They offer X"). After
-a profile edit, `/profile/edit` sets a sessionStorage flag; the component reads it
-once, shows an "updating" note, and refetches after 5s to let the backend's
-background recompute finish.
+The home screen stacks `SuggestionsSections` above the directory and search.
+Infinite scroll via `IntersectionObserver`, deduped by `member_number`. Suggestions
+render as one ranked list, each card showing the strongest reason ("They offer X").
+After a profile edit, a sessionStorage flag makes the component show an "updating"
+note and refetch after 5s (background recompute).
 
 ### Member profile and connecting
 
-`/members/[slug]` parses the trailing number out of the slug (the name part is
-cosmetic). Three states: not found, `profile_complete: false` (joined but not
-onboarded — identity, inviter and received endorsements only), or the full profile.
+`/members/[slug]` parses the trailing number from the slug. Three states: not
+found, `profile_complete: false` (identity + inviter + endorsements only), or the
+full profile. The full profile renders intro, then **traction** (if present), then
+industry/offers/looking-for.
 
-Contact gating mirrors the API exactly, driven by fields it computes: own profile or
-`is_connected` → `ReachOutBlock` with real contacts; `request_status === "pending"`
-→ a disabled state that never reopens the compose form; otherwise the **Connect**
-button → `ConnectRequestModal`.
+Contact gating mirrors the API: own profile or `is_connected` → `ReachOutBlock`;
+`request_status === "pending"` → disabled state; else **Connect** →
+`ConnectRequestModal`.
 
-`ReachOutBlock` builds a prefilled first message plus `wa.me` and `mailto:` deep
-links. On your own profile it instead shows the channels others will see.
+**ConnectRequestModal (intent-gated — CHANGED):** the request note now requires a
+real reason — min 30 chars, max 300, send disabled until the minimum is met, with a
+"N more characters" hint. Copy is tuned for the exec/founder audience ("Reach out
+to {name}", "Why are you reaching out?", placeholder "Your reason for connecting").
+The quota line shows "{N} left this week"; when out, "No requests left · resets
+Monday". Success toast: "Request sent to {name}. They'll be notified and can accept
+to connect."
 
-`/connections/requests` has Received/Sent tabs; accepting toasts, and surfaces a
-second nudge when the API returns `i_have_no_contact`.
+### Connection quota (calendar-week — CHANGED)
+
+The weekly connection limit is now **calendar-week (resets Monday 00:00 UTC)**, not
+rolling. The nav `ConnectionQuota` pill shows "{N} left" (desktop only), with
+"resets Monday" in its tooltip. The connections page always shows "You can send N
+connection requests a week, resets Monday. {N} left this week." The modal shows the
+reset only when the quota is spent.
 
 ### Post-connection feedback (`/feedback?token=`)
 
-The backend emails two follow-ups to whoever made a connection: a day-2 "have you
-reached out" nudge and a day-5 "how did it go" nudge. The second links here.
+Public, no session (HMAC token identifies both members). Collects reached-out,
+useful, 1–5 relevance, optional note. Nothing is required; a failed submit silently
+clears `saving`. Note: in production, feedback responses are ~0 (useful-rate is
+confirmed via manual follow-up instead).
 
-Public, no session — the HMAC token identifies both members. Four states:
-`loading` → `ready` (form) or `invalid`, then `done` after submit. It collects
-reached-out, useful, a 1–5 relevance score and an optional note.
+### Traction nudge banner
 
-**Nothing is required and the submit button is never disabled for validation**, so
-an empty response can be submitted. A failed submit silently clears `saving` with
-no error shown — worth knowing when someone reports "the button does nothing".
+`AppShell` renders a reusable **`Banner`** (brand-themed: `update` = soft brand-blue
+with a sparkles icon, plus `accent`/`urgent` variants — NOT generic info/warning
+colors). The traction nudge shows when the member is searchable but has no traction
+(`profileStatusStore.hasTraction` false), dismissible per session (reappears next
+login), linking to `/profile/edit#traction`. Edit-profile sections now carry `id`
+anchors (`#traction`, `#offerings`, etc.) + a deep-link scroll effect, so the banner
+lands on and focuses the traction field.
 
 ### Settings, unsubscribe, photo upload
 
-`/settings` holds account-level concerns (email opt-out, delete account),
-deliberately separate from profile *content* at `/profile/edit`.
+`/settings` holds account-level concerns (email opt-out, delete account), separate
+from profile content at `/profile/edit`. `PhotoUpload.jsx` resizes to WebP and PUTs
+straight to S3 with raw `fetch` (no credentials/CSRF).
 
-`/unsubscribe?token=` lives here rather than linking emails at the API, keeping the
-destination same-origin and avoiding a bare JSON response in the browser.
+---
 
-`PhotoUpload.jsx` resizes to WebP on a canvas, gets a presigned URL, then PUTs
-**straight to S3 with raw `fetch`** — no credentials or CSRF header, since the
-signature authorizes it and extra headers would break it. The API never sees the
-bytes.
+## Admin dashboard
 
-### Admin
+`(app)/admin/page.js` renders `GET /admin/metrics` plus several per-period cards.
+Sections, in order: **Accounts** (with activation cards), **Engagement**,
+**Connection activity**, **Connection feedback**, **Profiles**, **Invites**,
+**Search**, **Members by industry**, **Scheduled emails**.
 
-`(app)/admin/page.js` renders `GET /admin/metrics` as stat sections, in order:
-Accounts, Connection activity, Connection feedback, Profiles, Invites, Search,
-Members by industry, Scheduled emails. Each section is conditional on its block
-being present, so an older backend omits it rather than erroring.
+**Per-period cards (MetricCard / ActivationCard / the count endpoint).** Several
+metrics are now fixed cards with their own period dropdown (today / yesterday /
+this week / last week / month / months-back / custom), each fetching
+`GET /admin/metrics/count?metric=&date_from=&date_to=`:
 
-The Accounts section carries a **new-members metric with a day/week/month toggle**
-(local `newPeriod` state selecting from `metrics.accounts.new_members`).
-Connection feedback shows responses, useful, reached-out and average relevance,
-rendering an em-dash when `avg_relevance` is `null`.
+- **Accounts:** three **`ActivationCard`s** — each shows `New | Discoverable (%)`
+  for a period (new members who joined vs how many became discoverable = the
+  activation rate). Plus all-time account counts.
+- **Engagement:** Online now, DAU (Active today), WAU (this week), Returning WAU
+  (% of weekly actives who joined >7d ago), Stickiness (WAU ÷ active members), MAU.
+  WAU/MAU are rolling windows (they shift daily — expected).
+- **Connection activity:** `MetricCard`s for Requests sent and Accepted (same
+  period, so the absolute accept rate reads against absolute volume), plus all-time
+  totals and **Pending (fresh)** vs **Pending (stale)** (newer/older than 7 days —
+  tells a lag backlog from an ignored one).
+- **Profiles:** includes a **With traction** stat.
 
-Note the backend still computes and returns `contact_prefs`, but the dashboard no
-longer renders it.
+**MetricCard flicker fix:** the option list is memoized on a stable key
+(`options.join("|")`), not the array reference, so a parent re-render doesn't snap
+an open `<select>` shut. (Some residual flicker while several cards' initial
+fetches resolve is cosmetic, admin-only, and self-settles.)
+
+**Admin connections page** (`/admin/connections`): each member's **phone number**
+now renders under their name for follow-up without a lookup. Ordering: the
+**accepted** tab sorts by date accepted (`responded_at`); all other tabs sort by
+date sent (`created_at`), so newly-sent requests surface at the top of "all"/"pending".
+
+**adminService.js:** `getMetrics({dateFrom,dateTo})`, `getMetricCount({metric,
+from, to})`, `listUsers({..., inviters_only})` (an Inviters filter tab on the users
+page).
 
 ---
 
 ## Styling
 
-Tailwind **v4**, configured in CSS — there is no `tailwind.config.js`.
-`globals.css` imports Tailwind and declares brand tokens under `@theme`, which
-auto-generates utilities: `brand-navy`, `brand-blue` (+ `-50/-600/-700`),
+Tailwind **v4**, configured in CSS (no `tailwind.config.js`). `globals.css`
+declares brand tokens under `@theme`: `brand-navy`, `brand-blue` (+ `-50/-600/-700`),
 `brand-yellow` (+ `-50/-100`), `brand-ink`, `brand-red`. Use those, not raw hex.
 
 The backend's email templates hard-code the same palette independently
-(`services/email.py`), so a rebrand means changing both.
+(`services/email.py`); the email **page background was changed to slate `#f1f5f9`**
+(matching the app) and content width to 600px this cycle, so a rebrand still means
+changing both.
 
-Mobile-first throughout — the community lives on WhatsApp. Icons are
-`lucide-react`; font is Inter via `next/font/google`. The app is installable as a
-PWA (manifest + icons) but there's **no service worker**, so no offline support.
+Mobile-first. Icons `lucide-react`, font Inter. Installable PWA (manifest + icons),
+no service worker (no offline).
 
 ---
 
 ## Environment variables
 
-Only two, both public by definition (`NEXT_PUBLIC_` is inlined into the client
-bundle — never put a secret here).
+Two, both public (`NEXT_PUBLIC_`):
 
 | Variable | Default | Notes |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | Backend base URL, **including `/api/v1`**, no trailing slash |
-| `NEXT_PUBLIC_SITE_URL` | `https://connect.kuzana.co` | This app's own origin; builds shareable invite links and absolute OG URLs |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api/v1` | Backend base, **including `/api/v1`**, no trailing slash |
+| `NEXT_PUBLIC_SITE_URL` | `https://connect.kuzana.co` | This app's origin; invite links + OG URLs |
 
-Changing either requires a **rebuild**, not just a restart.
+Changing either requires a **rebuild**.
 
 ---
 
 ## Deployment
 
-Vercel, building from the default branch. `next.config.mjs` is intentionally empty.
+Vercel, building from the default branch (org `kyle-grantco`). Set
+`NEXT_PUBLIC_API_URL=https://api.kuzana.co/api/v1` and
+`NEXT_PUBLIC_SITE_URL=https://connect.kuzana.co`. Confirm the backend's
+`CORS_ORIGINS` contains the exact frontend origin and runs `ENV=production`.
 
-1. Set `NEXT_PUBLIC_API_URL=https://api.kuzana.co/api/v1` and
-   `NEXT_PUBLIC_SITE_URL=https://connect.kuzana.co` in the Vercel project.
-2. Confirm the backend's `CORS_ORIGINS` contains the exact frontend origin and that
-   it runs with `ENV=production` so cookies are `Secure; SameSite=None`.
+> **If the app logs in then immediately behaves as logged-out in production, it's
+> almost always one of those two settings, not the client.**
 
-**If the app logs in and then immediately behaves as logged-out in production, it's
-almost always one of those two settings**, not the client code.
+> **If a GitHub push succeeds but Vercel doesn't deploy**, the webhook missed the
+> commit (seen after GitHub incidents). Manually redeploy from the Vercel dashboard
+> or push an empty commit to re-trigger.
 
 ---
 
@@ -354,45 +340,33 @@ almost always one of those two settings**, not the client code.
 
 **JavaScript, not TypeScript.** Don't introduce `.ts`/`.tsx`.
 
-**`AGENTS.md` (aliased by `CLAUDE.md`) warns this Next.js version has breaking
-changes** relative to older conventions — read `node_modules/next/dist/docs/`
-before writing code. One visible consequence: dynamic route params are a
-**Promise** (`const { token } = await params;`).
+**Next 16 specifics:** dynamic route params are a Promise (`const { token } = await
+params;`); `useSearchParams` requires a `<Suspense>` boundary (`/auth/register`,
+`/unsubscribe`, `/feedback`).
 
-**`useSearchParams` requires a Suspense boundary.** Pages using it
-(`/auth/register`, `/unsubscribe`, `/feedback`) split into an inner component
-wrapped in `<Suspense>`. Forgetting this breaks the build, not just runtime.
+**Never render a FastAPI error object directly** — use the `errorMessage(err)`
+helper (validation errors are `detail: [{msg,...}]`).
 
-**Never render a FastAPI error object directly.** Validation errors arrive as
-`detail: [{type, loc, msg, …}]`, others as `detail: "string"`. Rendering the array
-throws React's "Objects are not valid as a React child" — use the `errorMessage(err)`
-helper pattern.
+**Never read browser storage during initial state** — load in a post-mount effect
+behind a `hydrated` flag.
 
-**Never read browser storage during initial state.** Server and client must render
-identically; load it in a post-mount effect behind a `hydrated` flag.
+**Never import raw `refreshSession`** — use `refreshSessionShared()`.
 
-**Never import the raw `refreshSession`.** Use `refreshSessionShared()`.
+**The profile URL slug is cosmetic** — only the trailing number is parsed.
 
-**The profile URL slug is cosmetic** — only the trailing number is parsed. Don't
-build logic on the slug text.
+**Bare URLs need `ensureUrl`.**
 
-**Bare URLs need `ensureUrl`**, or `example.com` resolves relative to our own site.
+**Suspended/deleted members are filtered by the backend**, not the client.
 
-**Suspended and deleted members disappear because the backend filters them**, not
-the client. Don't duplicate that filtering — you'd hide legitimate
-incomplete-profile members the API deliberately returns.
+**Memoize native `<select>` option lists on a stable key**, or a parent re-render
+closes an open dropdown (the MetricCard flicker).
 
 ### Known inconsistencies
 
 - `suggestionService.js`'s doc comment describes a removed `{can_help, needs_me}`
-  response shape; the API returns a single `suggestions` list.
-- `remember_device` is collected by the verify checkbox and sent, but the backend
-  ignores it — the checkbox has no effect.
-- Notification endpoints live in `connectionRequestService.js`, not a notification
-  service.
-- `AppShell` destructures an unused `notify`.
-- `searchStore.reset()` doesn't reset `direction` though `save()` writes it; and
-  the members page reads `saved.total` / `saved.page`, which aren't in the store's
-  initial state.
-- `/feedback` can submit an all-null response, shows no error on failure, and its
+  shape; the API returns a single `suggestions` list.
+- `remember_device` is sent but the backend ignores it.
+- Notification endpoints live in `connectionRequestService.js`.
+- `/feedback` can submit an all-null response and shows no error on failure; its
   "Back to Connect" link points at the guarded `/members`.
+- Some MetricCard initial-load flicker remains (cosmetic, admin-only).
