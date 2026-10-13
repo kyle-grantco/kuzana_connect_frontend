@@ -9,7 +9,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getMetricCount } from "@/app/lib/adminService";
 
 function iso(d) {
-  return d.toISOString().slice(0, 10);
+  // Build from LOCAL date components. toISOString() converts to UTC, which for
+  // an EAT-local midnight shifts the date back a day (EAT is UTC+3), so every
+  // preset range was off by one day and "today"/"this week" under-counted.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function presetRange(key) {
