@@ -277,7 +277,32 @@ export default function AdminDashboard() {
             />
             <Stat label="Declined" value={req.declined} sub="turned down" />
             <Stat
-              label="Connectors"
+              label="Initiators"
+              value={req.active_requesters ?? 0}
+              pct={
+                p.searchable.count
+                  ? Math.round(
+                      ((req.active_requesters ?? 0) / p.searchable.count) *
+                        1000,
+                    ) / 10
+                  : null
+              }
+              sub="members who sent ≥ 1 request (the drivers)"
+            />
+            <Stat
+              label="Targeted"
+              value={conn?.targeted ?? 0}
+              pct={
+                p.searchable.count
+                  ? Math.round(
+                      ((conn?.targeted ?? 0) / p.searchable.count) * 1000,
+                    ) / 10
+                  : null
+              }
+              sub="members who received ≥ 1 request (in demand)"
+            />
+            <Stat
+              label="Connected (any side)"
               value={conn?.active_connectors ?? 0}
               pct={
                 p.searchable.count
@@ -287,7 +312,7 @@ export default function AdminDashboard() {
                     ) / 10
                   : null
               }
-              sub="of discoverable members, connected ≥ 1"
+              sub="in ≥ 1 connection, sent or accepted"
             />
           </div>
         </section>

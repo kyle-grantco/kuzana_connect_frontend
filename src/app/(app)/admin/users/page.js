@@ -23,7 +23,7 @@ import { slugify } from "@/app/lib/slug";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 const STATUS_TABS = ["all", "active", "pending", "suspended", "deleted"];
-const FILTER_TABS = [...STATUS_TABS, "inviters", "connectors"];
+const FILTER_TABS = [...STATUS_TABS, "inviters", "connected"];
 const SIZE_OPTIONS = [20, 50, 100];
 
 const statusStyle = {
@@ -109,7 +109,7 @@ export default function AdminMembersPage() {
         <div className="flex flex-1 gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 text-xs">
           {FILTER_TABS.map((t) => {
             const isInviters = t === "inviters";
-            const isConnectors = t === "connectors";
+            const isConnectors = t === "connected";
             const active = isInviters
               ? invitersOnly
               : isConnectors
@@ -179,7 +179,7 @@ export default function AdminMembersPage() {
         <span>
           {total === 0 ? "0" : `${from}\u2013${to}`} of {total}
           {invitersOnly ? " · inviters" : ""}
-          {connectorsOnly ? " · connectors" : ""}
+          {connectorsOnly ? " · connected" : ""}
         </span>
         <label className="flex items-center gap-1.5">
           Per page
@@ -219,6 +219,8 @@ export default function AdminMembersPage() {
                   <th className="px-4 py-2.5">Phone</th>
                   <th className="px-4 py-2.5">Status</th>
                   <th className="px-4 py-2.5">Profile</th>
+                  <th className="px-4 py-2.5">Sent</th>
+                  <th className="px-4 py-2.5">Received</th>
                   <th className="px-4 py-2.5">Connections</th>
                   <th className="px-4 py-2.5">Invites</th>
                   <th className="px-4 py-2.5 text-right">Actions</th>
@@ -266,6 +268,32 @@ export default function AdminMembersPage() {
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-500">
                       {u.completion_status || "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {u.sent ? (
+                        <span className="text-slate-600">
+                          {u.sent}
+                          <span className="text-slate-400">
+                            {" "}
+                            ({u.sent_accepted} acc)
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {u.received ? (
+                        <span className="text-slate-600">
+                          {u.received}
+                          <span className="text-slate-400">
+                            {" "}
+                            ({u.received_accepted} acc)
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-xs">
                       {u.connections ? (
