@@ -279,7 +279,15 @@ export default function AdminDashboard() {
             <Stat
               label="Connectors"
               value={conn?.active_connectors ?? 0}
-              sub="members who connected ≥ 1"
+              pct={
+                p.searchable.count
+                  ? Math.round(
+                      ((conn?.active_connectors ?? 0) / p.searchable.count) *
+                        1000,
+                    ) / 10
+                  : null
+              }
+              sub="of discoverable members, connected ≥ 1"
             />
           </div>
         </section>
