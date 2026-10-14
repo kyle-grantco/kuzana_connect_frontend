@@ -25,6 +25,7 @@ export async function listUsers({
   status,
   q,
   inviters_only,
+  connectors_only,
   page = 1,
   size = 20,
 } = {}) {
@@ -32,6 +33,7 @@ export async function listUsers({
   if (status) params.set("status", status);
   if (q) params.set("q", q);
   if (inviters_only) params.set("inviters_only", "true");
+  if (connectors_only) params.set("connectors_only", "true");
   params.set("page", page);
   params.set("size", size);
   const res = await authRequest.get(`/admin/users?${params.toString()}`);

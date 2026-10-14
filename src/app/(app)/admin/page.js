@@ -78,6 +78,7 @@ export default function AdminDashboard() {
     s = m.search,
     inv = m.invites,
     req = m.connection_requests,
+    conn = m.connections,
     fb = m.connection_feedback,
     eng = m.engagement || {},
     comms = m.comms;
@@ -275,6 +276,11 @@ export default function AdminDashboard() {
               sub="older than 7 days"
             />
             <Stat label="Declined" value={req.declined} sub="turned down" />
+            <Stat
+              label="Connectors"
+              value={conn?.active_connectors ?? 0}
+              sub="members who connected ≥ 1"
+            />
           </div>
         </section>
       )}
