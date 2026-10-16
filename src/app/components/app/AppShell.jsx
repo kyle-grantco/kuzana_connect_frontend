@@ -19,6 +19,8 @@ import { useProfileStatus } from "@/app/store/profileStatusStore";
 import NotificationBell from "@/app/components/app/NotificationBell";
 import ConnectionQuota from "@/app/components/app/ConnectionQuota";
 import Banner from "@/app/components/ui/Banner";
+import ConnectionFeedbackModal from "@/app/components/app/ConnectionFeedbackModal";
+import { getNextFeedback } from "@/app/lib/connectionFeedbackService";
 
 // Authed app shell: top bar (logo + notifications + account menu) + centered
 // content area. Wrap the directory, profile view, etc. with this.
@@ -39,11 +41,31 @@ export default function AppShell({ children }) {
   const hasTraction = useProfileStatus((s) => s.hasTraction);
   const isSearchable = useProfileStatus((s) => s.isSearchable);
 
+  // in-app connection feedback: the next connection to ask about (or null),
+  // plus whether the modal is open. Feedback takes priority over the traction
+  // nudge when both apply.
+  const [fbPerson, setFbPerson] = useState(null);
+  const [fbOpen, setFbOpen] = useState(false);
+
+  async function loadNextFeedback() {
+    try {
+      const r = await getNextFeedback();
+      setFbPerson(r?.pending ? r.person : null);
+    } catch {
+      setFbPerson(null);
+    }
+  }
+
   useEffect(() => {
     getMyProfile()
       .then(setMe)
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    // only ask members with a usable profile (searchable)
+    if (profileLoaded && isSearchable) loadNextFeedback();
+  }, [profileLoaded, isSearchable]);
 
   useEffect(() => {
     function onClick(e) {
@@ -168,16 +190,51 @@ export default function AppShell({ children }) {
 
       {/* content */}
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {/* App-wide comms banners. Traction nudge: only for members who've set
-            up a profile (searchable) but have no traction yet. */}
-        <Banner
-          id="add-traction"
-          type="update"
-          show={profileLoaded && isSearchable && !hasTraction}
-          message="New: add your traction, where your business is at. It gives your matches useful context."
-          ctaLabel="Add it"
-          ctaHref="/profile/edit#traction"
-        />
+        {/* App-wide comms banners, one slot, prioritized:
+            feedback (a connection to rate) > traction nudge. */}
+        {fbPerson ? (
+          <Banner
+            id="connection-feedback"
+            type="feedback"
+            show={true}
+            message={`You connected with ${fbPerson.full_name}. How did it go?`}
+            ctaLabel="Rate this connection"
+            onCta={() => setFbOpen(true)}
+          />
+        ) : (
+          <Banner
+            id="add-traction"
+            type="update"
+            show={profileLoaded && isSearchable && !hasTraction}
+            message="New: add your traction, where your business is at. It gives your matches useful context."
+            ctaLabel="Add it"
+            ctaHref="/profile/edit#traction"
+          />
+        )}
+
+        {fbOpen && fbPerson && (
+          <ConnectionFeedbackModal
+            key={fbPerson.user_id}
+            person={fbPerson}
+            onDone={async () => {
+              // "rate another": fetch the next target. If one exists, the modal
+              // remounts for them (key change resets its steps); else it closes.
+              const r = await getNextFeedback().catch(() => null);
+              if (r?.pending && r.person) {
+                setFbPerson(r.person);
+              } else {
+                setFbPerson(null);
+                setFbOpen(false);
+              }
+            }}
+            onClose={async () => {
+              setFbOpen(false);
+              // a dismiss/submit may have changed the next target
+              await loadNextFeedback();
+            }}
+          />
+        )}
+
         <div className="mt-4 first:mt-0">{children}</div>
       </main>
     </div>

@@ -25,20 +25,29 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { X, Sparkles, Star, AlertCircle } from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
 
 const STYLES = {
   update: {
     wrap: "border-brand-blue-100 bg-brand-blue-50 text-brand-navy",
     icon: "text-brand-blue",
     cta: "bg-brand-blue text-white hover:bg-brand-blue-600",
-    Icon: Sparkles,
+    Icon: null,
+  },
+  // Uses the same subtle tone as suggestion "reason" chips (brand-yellow-50 +
+  // navy text), which already appears across the app, so it matches rather than
+  // introducing a new colour. CTA is the standard app blue.
+  feedback: {
+    wrap: "border-brand-yellow-100 bg-brand-yellow-50 text-brand-navy",
+    icon: "text-brand-navy",
+    cta: "bg-brand-blue text-white hover:bg-brand-blue-600",
+    Icon: null,
   },
   accent: {
     wrap: "border-brand-yellow-600/30 bg-brand-yellow-50 text-brand-navy",
     icon: "text-brand-yellow-700",
     cta: "bg-brand-navy text-white hover:opacity-90",
-    Icon: Star,
+    Icon: null,
   },
   urgent: {
     wrap: "border-brand-red/40 bg-brand-red/10 text-brand-navy",
@@ -61,15 +70,19 @@ export default function Banner({
   const s = STYLES[type] || STYLES.update;
   const [dismissed, setDismissed] = useState(false);
 
-  // Restore session-dismiss on mount so it doesn't flash before hiding.
+  // Restore dismiss on mount so it doesn't flash before hiding. Uses
+  // localStorage (NOT sessionStorage): the installed PWA fully closes between
+  // uses, which clears sessionStorage and made the banner reappear on every
+  // launch. localStorage persists; the flag is cleared at login (see
+  // clearDismissedBanners) so the banner reappears next login as intended.
   useEffect(() => {
     if (!dismissible || !id) return;
     try {
-      if (sessionStorage.getItem(`banner_dismissed:${id}`) === "1") {
+      if (localStorage.getItem(`banner_dismissed:${id}`) === "1") {
         setDismissed(true);
       }
     } catch {
-      // sessionStorage unavailable; just show it
+      // storage unavailable; just show it
     }
   }, [id, dismissible]);
 
@@ -78,7 +91,7 @@ export default function Banner({
   function dismiss() {
     setDismissed(true);
     try {
-      if (id) sessionStorage.setItem(`banner_dismissed:${id}`, "1");
+      if (id) localStorage.setItem(`banner_dismissed:${id}`, "1");
     } catch {
       // ignore
     }
@@ -93,7 +106,7 @@ export default function Banner({
         s.wrap
       }
     >
-      <Icon size={18} className={"mt-0.5 shrink-0 " + s.icon} />
+      {Icon && <Icon size={18} className={"mt-0.5 shrink-0 " + s.icon} />}
       <div className="min-w-0 flex-1">
         <p className="leading-relaxed">{message}</p>
         {ctaLabel && (ctaHref || onCta) && (
@@ -132,4 +145,19 @@ export default function Banner({
       )}
     </div>
   );
+}
+
+// Call at login so dismissed banners reappear in the new session. Clears every
+// localStorage banner_dismissed:* flag.
+export function clearDismissedBanners() {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("banner_dismissed:")) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // ignore
+  }
 }

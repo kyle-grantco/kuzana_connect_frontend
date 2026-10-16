@@ -8,6 +8,7 @@ import Button from "@/app/components/ui/Button";
 import { verifyOtp, sendOtp } from "@/app/lib/authService";
 import { getPending, clearPending } from "@/app/lib/pendingVerification";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import { clearDismissedBanners } from "@/app/components/ui/Banner";
 
 const RESEND_SECONDS = 60;
 
@@ -54,6 +55,9 @@ export default function VerifyPage() {
         remember_device: remember,
       });
       clearPending();
+      // New session: reset per-session banner dismissals so a dismissed nudge
+      // (traction, connection feedback) reappears on this fresh login.
+      clearDismissedBanners();
       // new members (no profile yet) see the welcome + member number, then onboarding.
       // returning members with a profile go straight into the app.
       if (res.onboarding_status === "not_started") {

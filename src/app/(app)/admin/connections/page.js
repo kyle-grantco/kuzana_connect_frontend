@@ -11,11 +11,19 @@ import { RefreshCw, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { listConnectionRequests } from "@/app/lib/adminService";
 import { slugify } from "@/app/lib/slug";
 
-const STATUS_TABS = ["all", "pending", "accepted", "declined"];
+const STATUS_TABS = ["all", "pending", "accepted", "declined", "rated"];
 const statusStyle = {
   pending: "bg-amber-50 text-amber-700",
   accepted: "bg-green-50 text-green-700",
   declined: "bg-slate-100 text-slate-500",
+};
+
+// connection quality (from grouped feedback): green useful, amber moderate,
+// red not useful. Subtle, matching the status pills.
+const qualityStyle = {
+  useful: "bg-green-50 text-green-700",
+  moderate: "bg-brand-yellow-100 text-brand-navy",
+  not_useful: "bg-brand-red/10 text-brand-red",
 };
 
 export default function AdminConnectionsPage() {
@@ -32,7 +40,8 @@ export default function AdminConnectionsPage() {
       setLoading(true);
       try {
         const data = await listConnectionRequests({
-          status: status === "all" ? undefined : status,
+          status: status === "all" || status === "rated" ? undefined : status,
+          rated_only: status === "rated" || undefined,
           page: toPage,
           size,
         });
@@ -139,6 +148,7 @@ export default function AdminConnectionsPage() {
                   <th className="px-4 py-2.5"></th>
                   <th className="px-4 py-2.5">Recipient</th>
                   <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5">Rating (/5)</th>
                   <th className="px-4 py-2.5">Sent</th>
                   <th className="px-4 py-2.5">Responded</th>
                 </tr>
@@ -168,6 +178,25 @@ export default function AdminConnectionsPage() {
                       >
                         {r.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-2.5 align-top">
+                      {r.quality ? (
+                        <span
+                          className={
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium " +
+                            qualityStyle[r.quality.label]
+                          }
+                          title={
+                            r.quality.n > 1
+                              ? "Average of both parties"
+                              : "One party rated"
+                          }
+                        >
+                          {r.quality.score}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 align-top text-xs text-slate-500">
                       {fmt(r.created_at)}

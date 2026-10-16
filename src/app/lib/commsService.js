@@ -1,4 +1,6 @@
 // Communication preferences (email opt-out) + public unsubscribe.
+// Connection feedback moved in-app (see connectionFeedbackService.js); the old
+// tokenized verify/submit calls were removed along with the /feedback page.
 import { authRequest, publicRequest } from "./api";
 
 export async function getCommsPrefs() {
@@ -19,16 +21,4 @@ export async function unsubscribeByToken(token) {
     `/comms/unsubscribe?token=${encodeURIComponent(token)}`,
   );
   return res.data;
-}
-
-export async function verifyFeedbackToken(token) {
-  const res = await publicRequest.get(
-    `/comms/feedback/verify?token=${encodeURIComponent(token)}`,
-  );
-  return res.data; // { ok, other_name }
-}
-
-export async function submitFeedback(payload) {
-  const res = await publicRequest.post("/comms/feedback", payload);
-  return res.data; // { ok }
 }

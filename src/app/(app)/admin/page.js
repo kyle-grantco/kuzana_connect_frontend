@@ -80,6 +80,7 @@ export default function AdminDashboard() {
     req = m.connection_requests,
     conn = m.connections,
     fb = m.connection_feedback,
+    cq = m.connection_quality,
     eng = m.engagement || {},
     comms = m.comms;
 
@@ -330,16 +331,62 @@ export default function AdminDashboard() {
               value={fb.responses}
               sub="feedback submitted"
             />
-            <Stat label="Useful" value={fb.useful} sub="confirmed useful" />
             <Stat
-              label="Reached out"
-              value={fb.reached_out}
-              sub="actually made contact"
+              label="Engaged"
+              value={fb.engaged}
+              pct={fb.engagement_rate}
+              sub="reached out / connected"
             />
             <Stat
-              label="Avg relevance"
-              value={fb.avg_relevance == null ? "—" : fb.avg_relevance}
-              sub="match quality (1-5)"
+              label="Not engaged"
+              value={fb.not_engaged}
+              sub="hadn't reached out yet"
+            />
+            <Stat
+              label="Avg score"
+              value={fb.avg_score == null ? "—" : fb.avg_score}
+              sub="usefulness (1-5), engaged only"
+            />
+          </div>
+          <Link
+            href="/admin/feedback"
+            className="mt-3 inline-block text-xs font-medium text-brand-blue hover:underline"
+          >
+            View all feedback &rarr;
+          </Link>
+        </section>
+      )}
+
+      {/* Connection quality — grouped BY CONNECTION (not per response). The
+          real number: of connections rated, how many are useful. */}
+      {cq && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-slate-500">
+            Connection quality
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <Stat
+              label="Rated"
+              value={cq.rated}
+              sub="connections with a score"
+            />
+            <Stat
+              label="Useful"
+              value={cq.useful}
+              pct={cq.useful_rate}
+              sub="score ≥ 4"
+            />
+            <Stat label="Moderate" value={cq.moderate} sub="score = 3" />
+            <Stat label="Not useful" value={cq.not_useful} sub="score < 3" />
+            <Stat
+              label="Both rated"
+              value={cq.both_rated}
+              sub="both parties scored"
+            />
+            <Stat
+              label="Avg quality"
+              value={cq.avg_quality == null ? "—" : cq.avg_quality}
+              sub="avg connection score"
             />
           </div>
         </section>

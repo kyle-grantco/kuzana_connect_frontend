@@ -8,6 +8,7 @@ import {
   Users as UsersIcon,
   Link2,
   Mail,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { getMyProfile } from "@/app/lib/profileService";
@@ -70,6 +71,12 @@ export default function AdminLayout({ children }) {
             className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
           >
             <Link2 size={14} /> Connections
+          </Link>
+          <Link
+            href="/admin/feedback"
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-slate-600 hover:bg-white"
+          >
+            <MessageSquare size={14} /> Feedback
           </Link>
           <Link
             href="/admin/comms"

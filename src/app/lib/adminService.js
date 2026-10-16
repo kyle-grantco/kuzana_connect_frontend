@@ -47,11 +47,13 @@ export async function listUsers({
 // GET /admin/connections -> { total, page, size, results:[{requester, recipient, status, ...}] }
 export async function listConnectionRequests({
   status,
+  rated_only,
   page = 1,
   size = 25,
 } = {}) {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
+  if (rated_only) params.set("rated_only", "true");
   params.set("page", page);
   params.set("size", size);
   const res = await authRequest.get(`/admin/connections?${params.toString()}`);
@@ -64,6 +66,18 @@ export async function listCommsRuns({ page = 1, size = 25 } = {}) {
   params.set("page", page);
   params.set("size", size);
   const res = await authRequest.get(`/admin/comms?${params.toString()}`);
+  return res.data;
+}
+
+// GET /admin/connection-feedback -> { total, page, size, results:[{rater, other,
+// engaged, score, note, created_at}] } — submitted ('given') feedback, newest first.
+export async function listConnectionFeedback({ page = 1, size = 50 } = {}) {
+  const params = new URLSearchParams();
+  params.set("page", page);
+  params.set("size", size);
+  const res = await authRequest.get(
+    `/admin/connection-feedback?${params.toString()}`,
+  );
   return res.data;
 }
 
