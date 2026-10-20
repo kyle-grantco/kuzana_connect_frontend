@@ -27,6 +27,22 @@ const SPECIAL_TABS = ["inviters", "connected", "initiators", "targeted"];
 const FILTER_TABS = [...STATUS_TABS, ...SPECIAL_TABS];
 const SIZE_OPTIONS = [20, 50, 100];
 
+// Joined column: always shown in EAT, whatever the admin's browser timezone.
+// "10 Oct 2025" over "11:40:23".
+const JOINED_DATE = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Nairobi",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+const JOINED_TIME = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Nairobi",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
 const statusStyle = {
   active: "bg-green-50 text-green-700",
   pending: "bg-amber-50 text-amber-700",
@@ -221,6 +237,7 @@ export default function AdminMembersPage() {
                   <th className="px-4 py-2.5">Received</th>
                   <th className="px-4 py-2.5">Connections</th>
                   <th className="px-4 py-2.5">Invites</th>
+                  <th className="px-4 py-2.5">Joined</th>
                   <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -310,6 +327,20 @@ export default function AdminMembersPage() {
                         </span>
                       ) : (
                         <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5">
+                      {u.created_at ? (
+                        <>
+                          <div className="text-xs text-slate-600">
+                            {JOINED_DATE.format(new Date(u.created_at))}
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            {JOINED_TIME.format(new Date(u.created_at))}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5">
