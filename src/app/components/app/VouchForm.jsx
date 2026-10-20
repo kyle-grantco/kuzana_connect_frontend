@@ -1,6 +1,6 @@
 "use client";
 
-// Shared vouch form: relationship (dropdown), remarks (one line), and the
+// Shared vouch form: relationship (dropdown), remarks (3-line textarea), and the
 // engagement period (from / to as month+year, side by side, "to" defaults to
 // Present via a Current checkbox). Used by both the endorsement form and the
 // invite form (invite adds a name field on top via `extraTop`).
@@ -121,10 +121,11 @@ export default function VouchForm({
             {remarks.length}/{LIMITS.remarks}
           </span>
         </div>
-        <input
+        <textarea
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
           disabled={saving}
+          rows={3}
           maxLength={LIMITS.remarks}
           placeholder="What they are genuinely good at, in your own words"
           className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
