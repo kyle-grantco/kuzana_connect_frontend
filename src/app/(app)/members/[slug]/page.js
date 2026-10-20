@@ -25,6 +25,7 @@ import { memberNumberFromSlug, slugify } from "@/app/lib/slug";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
 import LockedTeaser from "@/app/components/app/LockedTeaser";
 import EndorsementsSection from "@/app/components/app/EndorsementsSection";
+import VouchCount from "@/app/components/ui/VouchCount";
 import InvitesSection from "@/app/components/app/InvitesSection";
 import SuggestionsSections from "@/app/components/app/SuggestionsSections";
 import { useNotificationStore } from "@/app/store/notificationStore";
@@ -108,6 +109,19 @@ export default function MemberProfilePage() {
       .catch(() => {});
   }, [slug]);
 
+  // The vouches/invites sections only render after the member fetch, so a
+  // /members/...#vouches (or #invites-section) link can't scroll on its own.
+  // Scroll once loaded.
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!member || !["vouches", "invites-section"].includes(hash)) return;
+    requestAnimationFrame(() => {
+      document
+        .getElementById(hash)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [member]);
+
   // Connect now opens the request composer. Contacts are revealed only after
   // the recipient accepts (handled server-side; this page reflects it on reload).
 
@@ -173,6 +187,13 @@ export default function MemberProfilePage() {
             <h1 className="break-words text-lg font-semibold text-brand-navy">
               {member.full_name}
             </h1>
+            <VouchCount
+              count={member.vouch_count}
+              member={member}
+              size="md"
+              hideZero
+              className="mx-auto mt-1"
+            />
             <p className="mt-2 text-sm text-slate-500">
               This member hasn&apos;t set up their profile yet.
             </p>
@@ -193,6 +214,12 @@ export default function MemberProfilePage() {
                 >
                   {inviter.full_name}
                 </button>
+                <VouchCount
+                  count={inviter.vouch_count}
+                  member={inviter}
+                  hideZero
+                  className="ml-1.5 align-middle"
+                />
               </p>
             )}
           </div>
@@ -200,7 +227,7 @@ export default function MemberProfilePage() {
           {/* Endorsements received — read-only. For a just-joined member this is
               the seeded vouch from their inviter. */}
           {member.user_id && (
-            <div className="mt-5">
+            <div id="vouches" className="mt-5 scroll-mt-20">
               <EndorsementsSection
                 userId={member.user_id}
                 viewerIsOwner={isMe}
@@ -276,6 +303,12 @@ export default function MemberProfilePage() {
                 <span className="break-words">{member.location}</span>
               </p>
             )}
+            <VouchCount
+              count={member.vouch_count}
+              member={member}
+              size="md"
+              className="mx-auto mt-2"
+            />
             {connected && !isMe && !member.is_self && (
               <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700">
                 <Check size={11} /> Connected
@@ -373,6 +406,12 @@ export default function MemberProfilePage() {
                 >
                   {inviter.full_name}
                 </button>
+                <VouchCount
+                  count={inviter.vouch_count}
+                  member={inviter}
+                  hideZero
+                  className="ml-1.5 align-middle"
+                />
               </p>
             )}
           </div>
@@ -451,7 +490,7 @@ export default function MemberProfilePage() {
       {/* Endorsements — trust signal, after knowing what the member does.
           Needs the owner's user_id (member.user_id). */}
       {member.user_id && (
-        <div className="mt-5">
+        <div id="vouches" className="mt-5 scroll-mt-20">
           <EndorsementsSection userId={member.user_id} viewerIsOwner={isMe} />
         </div>
       )}

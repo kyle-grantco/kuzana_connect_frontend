@@ -2,10 +2,10 @@
 import { authRequest } from "./api";
 
 // The next connection the member should be asked about (or { pending:false }).
-// Calling this also stamps "last asked" server-side (for the not-engaged defer).
+// Read-only (no server-side stamp), so it's safe to re-check on navigation.
 export async function getNextFeedback() {
   const res = await authRequest.get("/connection-feedback/next");
-  return res.data; // { pending, person: { user_id, full_name, title, photo_url } | null }
+  return res.data; // { pending, person: { user_id, member_number, full_name, title, photo_url } | null }
 }
 
 // engaged=false -> recorded, re-asked later (score ignored).
@@ -22,7 +22,7 @@ export async function submitConnectionFeedback({
     score: score ?? null,
     note: note ?? null,
   });
-  return res.data; // { ok }
+  return res.data; // { ok, has_next, next: person | null }
 }
 
 // Dismiss the prompt for this connection (re-asked after a window; 2nd = permanent).

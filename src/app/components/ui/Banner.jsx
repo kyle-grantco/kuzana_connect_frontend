@@ -5,6 +5,9 @@
 //
 // Styling is Kuzana Connect's own, not the generic info/warning/danger palette,
 // so banners read as part of the app, not as system alerts:
+//   important - soft brand-blue + left accent bar + icon. Same comms palette as
+//               `update`; urgency comes from emphasis, not a new colour (yellow
+//               is reserved for vouch counts).
 //   update  - soft brand-blue. The default: "here's something useful / new".
 //   accent  - brand-yellow highlight. For things to celebrate or draw the eye.
 //   urgent  - brand-red. Reserved for genuinely important / action-required.
@@ -28,6 +31,12 @@ import Link from "next/link";
 import { X, AlertCircle } from "lucide-react";
 
 const STYLES = {
+  important: {
+    wrap: "border-brand-blue-100 border-l-4 border-l-brand-blue bg-brand-blue-50 text-brand-navy",
+    icon: "text-brand-blue",
+    cta: "bg-brand-blue text-white hover:bg-brand-blue-600",
+    Icon: null,
+  },
   update: {
     wrap: "border-brand-blue-100 bg-brand-blue-50 text-brand-navy",
     icon: "text-brand-blue",
@@ -64,11 +73,16 @@ export default function Banner({
   ctaLabel,
   ctaHref,
   onCta, // optional click handler (alternative to ctaHref)
+  onDismiss, // optional: lets a parent move on to the next banner
+  icon, // optional lucide icon component, overrides the type's default
   dismissible = true,
   show = true, // parent controls the condition (e.g. traction empty)
 }) {
   const s = STYLES[type] || STYLES.update;
   const [dismissed, setDismissed] = useState(false);
+  // Don't render until the dismissed flag has been checked, so a dismissed
+  // banner never flashes on load.
+  const [checked, setChecked] = useState(!dismissible || !id);
 
   // Restore dismiss on mount so it doesn't flash before hiding. Uses
   // localStorage (NOT sessionStorage): the installed PWA fully closes between
@@ -77,16 +91,11 @@ export default function Banner({
   // clearDismissedBanners) so the banner reappears next login as intended.
   useEffect(() => {
     if (!dismissible || !id) return;
-    try {
-      if (localStorage.getItem(`banner_dismissed:${id}`) === "1") {
-        setDismissed(true);
-      }
-    } catch {
-      // storage unavailable; just show it
-    }
+    setDismissed(isBannerDismissed(id));
+    setChecked(true);
   }, [id, dismissible]);
 
-  if (!show || dismissed) return null;
+  if (!show || dismissed || !checked) return null;
 
   function dismiss() {
     setDismissed(true);
@@ -95,9 +104,10 @@ export default function Banner({
     } catch {
       // ignore
     }
+    onDismiss?.();
   }
 
-  const Icon = s.Icon;
+  const Icon = icon || s.Icon;
 
   return (
     <div
@@ -145,6 +155,16 @@ export default function Banner({
       )}
     </div>
   );
+}
+
+// Whether a dismissible banner was dismissed this login (false if storage is
+// unavailable, so it just shows).
+export function isBannerDismissed(id) {
+  try {
+    return localStorage.getItem(`banner_dismissed:${id}`) === "1";
+  } catch {
+    return false;
+  }
 }
 
 // Call at login so dismissed banners reappear in the new session. Clears every

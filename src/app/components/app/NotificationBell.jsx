@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { slugify } from "@/app/lib/slug";
+import VouchCount from "@/app/components/ui/VouchCount";
 import {
   getNotifications,
   getUnreadCount,
@@ -154,11 +155,16 @@ export default function NotificationBell() {
           ) : (
             <div className="max-h-96 overflow-y-auto">
               {items.map((n) => (
-                <button
+                <div
                   key={n.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => go(n)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") go(n);
+                  }}
                   className={
-                    "flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 " +
+                    "flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 " +
                     (n.is_read ? "" : "bg-brand-blue-50/40")
                   }
                 >
@@ -167,11 +173,18 @@ export default function NotificationBell() {
                     <p className="text-sm leading-snug text-slate-700">
                       {n.text}
                     </p>
+                    <VouchCount
+                      count={n.actor?.vouch_count}
+                      member={n.actor}
+                      hideZero
+                      onClick={() => setOpen(false)}
+                      className="mt-0.5"
+                    />
                     <p className="mt-0.5 text-[11px] text-slate-400">
                       {timeAgo(n.created_at)}
                     </p>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}

@@ -12,6 +12,7 @@ import {
   getMemberSuggestionsAdmin,
 } from "@/app/lib/suggestionService";
 import { slugify } from "@/app/lib/slug";
+import VouchCount from "@/app/components/ui/VouchCount";
 
 const VISIBLE = 6;
 const VISIBLE_COMPACT = 3;
@@ -161,6 +162,7 @@ function SuggestionCard({ m, onOpen }) {
           <div className="truncate text-xs text-slate-400">
             {[m.title, m.business_name].filter(Boolean).join(" · ")}
           </div>
+          <VouchCount count={m.vouch_count} member={m} className="mt-1.5" />
         </div>
       </div>
 

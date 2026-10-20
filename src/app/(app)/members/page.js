@@ -13,6 +13,7 @@ import { useProfileStatus } from "@/app/store/profileStatusStore";
 import { useSearchStore } from "@/app/store/searchStore";
 import LockedTeaser from "@/app/components/app/LockedTeaser";
 import IndustryChips from "@/app/components/ui/IndustryChips";
+import VouchCount from "@/app/components/ui/VouchCount";
 import SuggestionsSections from "@/app/components/app/SuggestionsSections";
 
 const PAGE_SIZE = 20;
@@ -391,10 +392,15 @@ export default function DirectoryPage() {
             )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {results.map((m) => (
-                <button
+                <div
                   key={m.member_number}
+                  role="link"
+                  tabIndex={0}
                   onClick={() => openMember(m)}
-                  className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") openMember(m);
+                  }}
+                  className="flex min-w-0 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                 >
                   <div className="mb-3 flex items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-blue text-sm font-medium text-white">
@@ -416,6 +422,11 @@ export default function DirectoryPage() {
                       <div className="truncate text-xs text-slate-400">
                         {[m.title, m.business_name].filter(Boolean).join(" · ")}
                       </div>
+                      <VouchCount
+                        count={m.vouch_count}
+                        member={m}
+                        className="mt-1.5"
+                      />
                     </div>
                   </div>
                   {m.offerings?.length > 0 && (
@@ -440,7 +451,7 @@ export default function DirectoryPage() {
                       {m.location}
                     </div>
                   )}
-                </button>
+                </div>
               ))}
             </div>
 

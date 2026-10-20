@@ -7,7 +7,9 @@
 //     Yes -> Step 2
 //   Step 2 (score):     tap 1-5 (required) + optional note -> Submit
 //                       (one button; empty note is the "skip")
-//   Thank-you:          "Rate another connection?" -> parent loads the next one
+//   Thank-you:          names the next connection to rate (from the submit
+//                       response): "Rate your connection with Frank" ->
+//                       onDone(next) and the parent opens it
 //
 // Dismiss (X) is its own flow: calls onDismiss (banner -> dismiss endpoint),
 // never saves partial form data.
@@ -25,7 +27,7 @@ export default function ConnectionFeedbackModal({ person, onDone, onClose }) {
   const [score, setScore] = useState(null);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [hasNext, setHasNext] = useState(false);
+  const [next, setNext] = useState(null); // next person to rate, or null
 
   const other = person?.user_id;
   const name = person?.full_name || "your connection";
@@ -43,7 +45,7 @@ export default function ConnectionFeedbackModal({ person, onDone, onClose }) {
         other_user_id: other,
         engaged: false,
       });
-      setHasNext(!!r?.has_next);
+      setNext(r?.next || null);
     } catch {
       // best-effort; still show thanks
     } finally {
@@ -62,7 +64,7 @@ export default function ConnectionFeedbackModal({ person, onDone, onClose }) {
         score,
         note: note.trim() || null,
       });
-      setHasNext(!!r?.has_next);
+      setNext(r?.next || null);
       setStep("thanks");
     } catch {
       setSaving(false);
@@ -171,24 +173,24 @@ export default function ConnectionFeedbackModal({ person, onDone, onClose }) {
               Thank you
             </h2>
             <p className="mb-5 text-sm text-slate-500">
-              {hasNext
-                ? "Want to rate another connection?"
+              {next
+                ? `Next up: how did it go with ${next.full_name}?`
                 : "That's all for now."}
             </p>
-            <div className="flex gap-2">
-              {hasNext && (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {next && (
                 <button
-                  onClick={() => onDone?.()}
-                  className="flex-1 rounded-lg bg-brand-blue py-2.5 text-sm font-medium text-white hover:bg-brand-blue-600"
+                  onClick={() => onDone?.(next)}
+                  className="flex-1 rounded-lg bg-brand-blue px-3 py-2.5 text-sm font-medium text-white hover:bg-brand-blue-600"
                 >
-                  Rate another
+                  Rate your connection with {next.full_name.split(" ")[0]}
                 </button>
               )}
               <button
                 onClick={() => onClose?.()}
                 className={
                   "rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:border-slate-300 " +
-                  (hasNext ? "flex-1" : "w-full")
+                  (next ? "flex-1" : "w-full")
                 }
               >
                 Done

@@ -14,6 +14,7 @@ import {
   declineConnectionRequest,
 } from "@/app/lib/connectionRequestService";
 import { slugify } from "@/app/lib/slug";
+import VouchCount from "@/app/components/ui/VouchCount";
 import { useNotificationStore } from "@/app/store/notificationStore";
 
 export default function ConnectionRequests() {
@@ -127,9 +128,14 @@ export default function ConnectionRequests() {
                 key={r.id}
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
               >
-                <button
+                <div
+                  role="link"
+                  tabIndex={0}
                   onClick={() => openProfile(r.requester)}
-                  className="flex w-full items-center gap-3 text-left"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") openProfile(r.requester);
+                  }}
+                  className="flex w-full cursor-pointer items-center gap-3 text-left"
                 >
                   <Avatar p={r.requester} />
                   <div className="min-w-0 flex-1">
@@ -141,8 +147,13 @@ export default function ConnectionRequests() {
                         .filter(Boolean)
                         .join(" · ")}
                     </div>
+                    <VouchCount
+                      count={r.requester?.vouch_count}
+                      member={r.requester}
+                      className="mt-1"
+                    />
                   </div>
-                </button>
+                </div>
                 <p className="mt-3 break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
                   {r.message}
                 </p>
@@ -189,10 +200,15 @@ export default function ConnectionRequests() {
       ) : (
         <div className="space-y-2">
           {outgoing.map((r) => (
-            <button
+            <div
               key={r.id}
+              role="link"
+              tabIndex={0}
               onClick={() => openProfile(r.recipient)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm hover:border-slate-300"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") openProfile(r.recipient);
+              }}
+              className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm hover:border-slate-300"
             >
               <Avatar p={r.recipient} />
               <div className="min-w-0 flex-1">
@@ -202,9 +218,14 @@ export default function ConnectionRequests() {
                 <div className="truncate text-xs text-slate-400">
                   {r.recipient?.title}
                 </div>
+                <VouchCount
+                  count={r.recipient?.vouch_count}
+                  member={r.recipient}
+                  className="mt-1"
+                />
               </div>
               <StatusPill status={r.status} />
-            </button>
+            </div>
           ))}
         </div>
       )}

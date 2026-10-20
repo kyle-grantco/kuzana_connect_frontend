@@ -43,7 +43,11 @@ export async function generateMetadata({ params }) {
   const title = inviter?.inviter_name
     ? `${inviter.inviter_name} invited you to Kuzana Connect`
     : "You've been invited to Kuzana Connect";
+  const vouches = inviter?.inviter_vouch_count || 0;
   const description =
+    (inviter?.inviter_name && vouches
+      ? `${inviter.inviter_name} has ${vouches} ${vouches === 1 ? "vouch" : "vouches"} on Kuzana Connect. `
+      : "") +
     "Kuzana Connect is an invite-only network of trusted founders. " +
     "Accept your invitation to join and be introduced.";
 

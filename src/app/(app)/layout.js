@@ -64,6 +64,8 @@ export default function AppLayout({ children }) {
           memberNumber: me?.user?.member_number ?? null,
           fullName: me?.user?.full_name || "",
           hasTraction: !!(p?.traction && String(p.traction).trim()),
+          vouchCount: me?.vouch_count ?? null,
+          vouchBack: me?.vouch_back ?? null,
         });
       } catch {
         setStatus({ isSearchable: false, completionStatus: "pending" });

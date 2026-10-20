@@ -11,6 +11,8 @@ const useProfileStatus = create((set) => ({
   memberNumber: null,
   fullName: "",
   hasTraction: true, // assume true until known, so the banner doesn't flash
+  vouchCount: null, // null = unknown, so the vouch banner doesn't flash
+  vouchBack: null, // inviter not yet vouched for: {user_id, full_name, member_number}
   setStatus: (s) => set({ ...s, loaded: true }),
   reset: () =>
     set({
@@ -20,6 +22,8 @@ const useProfileStatus = create((set) => ({
       memberNumber: null,
       fullName: "",
       hasTraction: true,
+      vouchCount: null,
+      vouchBack: null,
     }),
 }));
 

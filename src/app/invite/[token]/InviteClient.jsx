@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/app/components/ui/Button";
+import VouchCount from "@/app/components/ui/VouchCount";
 import { checkInviteToken } from "@/app/lib/authService";
 import { setPendingInvite } from "@/app/lib/pendingInvite";
 
@@ -90,6 +91,18 @@ export default function InviteClient({ token }) {
                 ? `${state.inviter.inviter_name} invited you to join`
                 : "You've been invited to join"}
             </h1>
+            {/* Public page: the invitee can't open profiles yet, so plain text */}
+            <VouchCount
+              count={state.inviter.inviter_vouch_count}
+              member={{
+                full_name: state.inviter.inviter_name,
+                member_number: state.inviter.inviter_member_number,
+              }}
+              size="md"
+              hideZero
+              linked={false}
+              className="mt-1"
+            />
             <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-slate-500">
               Kuzana Connect, a trusted network of founders.
             </p>

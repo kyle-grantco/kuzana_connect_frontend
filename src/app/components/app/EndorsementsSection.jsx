@@ -135,10 +135,10 @@ export default function EndorsementsSection({
     try {
       if (editing) {
         await updateEndorsement(editing.id, values);
-        notify("Endorsement updated.", "success", 2500);
+        notify("Vouch updated.", "success", 2500);
       } else {
         await createEndorsement({ endorsed_user_id: userId, ...values });
-        notify("Endorsement added.", "success", 2500);
+        notify("Vouch added.", "success", 2500);
       }
       setFormOpen(false);
       setEditing(null);
@@ -149,7 +149,7 @@ export default function EndorsementsSection({
         setMine(row);
       }
     } catch (err) {
-      setFormError(fieldError(err, "Couldn't save the endorsement."));
+      setFormError(fieldError(err, "Couldn't save the vouch."));
     } finally {
       setSaving(false);
     }
@@ -160,12 +160,12 @@ export default function EndorsementsSection({
     setDeleting(true);
     try {
       await deleteEndorsement(toDelete.id);
-      notify("Endorsement removed.", "success", 2500);
+      notify("Vouch removed.", "success", 2500);
       setToDelete(null);
       await load(direction, data.page);
       if (!viewerIsOwner) setMine(null);
     } catch {
-      notify("Couldn't remove the endorsement.", "error", 3500);
+      notify("Couldn't remove the vouch.", "error", 3500);
     } finally {
       setDeleting(false);
     }
@@ -185,7 +185,7 @@ export default function EndorsementsSection({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-brand-navy">Endorsements</h2>
+        <h2 className="text-sm font-semibold text-brand-navy">Vouches</h2>
 
         {/* direction toggle (hidden when receivedOnly) */}
         {!receivedOnly && (
@@ -222,7 +222,7 @@ export default function EndorsementsSection({
           onClick={openCreate}
           className="mb-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-brand-blue/40 py-2.5 text-sm font-medium text-brand-blue hover:border-brand-blue hover:bg-brand-blue-50"
         >
-          <Plus size={15} /> Endorse this person
+          <Plus size={15} /> Vouch for this person
         </button>
       )}
 
@@ -230,13 +230,13 @@ export default function EndorsementsSection({
       {formOpen && (
         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="mb-3 text-xs font-semibold text-slate-500">
-            {editing ? "Edit your endorsement" : "Endorse this person"}
+            {editing ? "Edit your vouch" : "Vouch for this person"}
           </div>
           <VouchForm
             initial={editing}
             saving={saving}
             error={formError}
-            submitLabel={editing ? "Save changes" : "Add endorsement"}
+            submitLabel={editing ? "Save changes" : "Add vouch"}
             onSubmit={submitForm}
             onCancel={() => {
               setFormOpen(false);
@@ -252,8 +252,8 @@ export default function EndorsementsSection({
       ) : data.items.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-400">
           {direction === "received"
-            ? "No endorsements yet."
-            : "Hasn't endorsed anyone yet."}
+            ? "No vouches yet."
+            : "Hasn't vouched for anyone yet."}
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -322,8 +322,8 @@ export default function EndorsementsSection({
       <ConfirmModal
         open={!!toDelete}
         category="danger"
-        title="Remove this endorsement?"
-        message="Your vouch for this person will be removed. You can endorse them again later."
+        title="Remove this vouch?"
+        message="Your vouch for this person will be removed. You can vouch for them again later."
         confirmLabel="Remove"
         onConfirm={confirmDelete}
         onClose={() => setToDelete(null)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   ChevronDown,
   User,
@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   LayoutDashboard,
+  Handshake,
 } from "lucide-react";
 import { useAuthStore } from "@/app/store/authStore";
 import { logout } from "@/app/lib/logout";
@@ -18,7 +19,7 @@ import { useNotificationStore } from "@/app/store/notificationStore";
 import { useProfileStatus } from "@/app/store/profileStatusStore";
 import NotificationBell from "@/app/components/app/NotificationBell";
 import ConnectionQuota from "@/app/components/app/ConnectionQuota";
-import Banner from "@/app/components/ui/Banner";
+import Banner, { isBannerDismissed } from "@/app/components/ui/Banner";
 import ConnectionFeedbackModal from "@/app/components/app/ConnectionFeedbackModal";
 import { getNextFeedback } from "@/app/lib/connectionFeedbackService";
 
@@ -30,8 +31,16 @@ import { getNextFeedback } from "@/app/lib/connectionFeedbackService";
 // condition comes from the profile store (set by the (app) guard layout), so
 // no extra fetch is needed here. Banners are dismissible per session and
 // reappear on next login until the member acts.
+const BANNER_IDS = [
+  "vouch-back",
+  "get-vouched",
+  "connection-feedback",
+  "add-traction",
+];
+
 export default function AppShell({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { notify } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const [me, setMe] = useState(null);
@@ -40,12 +49,26 @@ export default function AppShell({ children }) {
   const profileLoaded = useProfileStatus((s) => s.loaded);
   const hasTraction = useProfileStatus((s) => s.hasTraction);
   const isSearchable = useProfileStatus((s) => s.isSearchable);
+  const vouchCount = useProfileStatus((s) => s.vouchCount);
+  const myNumber = useProfileStatus((s) => s.memberNumber);
+  const myName = useProfileStatus((s) => s.fullName);
+  const vouchBack = useProfileStatus((s) => s.vouchBack);
+  const setStatus = useProfileStatus((s) => s.setStatus);
 
   // in-app connection feedback: the next connection to ask about (or null),
-  // plus whether the modal is open. Feedback takes priority over the traction
-  // nudge when both apply.
+  // plus whether the modal is open. fbLoaded: the first fetch has settled, so
+  // the banner slot doesn't show a lower banner and then swap it out.
   const [fbPerson, setFbPerson] = useState(null);
   const [fbOpen, setFbOpen] = useState(false);
+  const [fbLoaded, setFbLoaded] = useState(false);
+
+  // Banner ids dismissed this login. AppShell only mounts client-side (after
+  // the (app) guard), so reading storage in the initializer is safe and the
+  // slot never flashes a dismissed banner.
+  const [dismissed, setDismissed] = useState(
+    () => new Set(BANNER_IDS.filter(isBannerDismissed)),
+  );
+  const markDismissed = (id) => setDismissed((d) => new Set(d).add(id));
 
   async function loadNextFeedback() {
     try {
@@ -53,19 +76,34 @@ export default function AppShell({ children }) {
       setFbPerson(r?.pending ? r.person : null);
     } catch {
       setFbPerson(null);
+    } finally {
+      setFbLoaded(true);
     }
   }
 
+  // Re-read own profile on every in-app navigation (the shell stays mounted
+  // across pages), so profile-driven banners (vouches, vouch-back, traction)
+  // reflect the current state, e.g. hide once someone has vouched for you.
+  // (Feedback is re-checked by its own effect below, also on navigation.)
   useEffect(() => {
     getMyProfile()
-      .then(setMe)
+      .then((m) => {
+        setMe(m);
+        const p = m?.profile;
+        setStatus({
+          hasTraction: !!(p?.traction && String(p.traction).trim()),
+          vouchCount: m?.vouch_count ?? null,
+          vouchBack: m?.vouch_back ?? null,
+        });
+      })
       .catch(() => {});
-  }, []);
+  }, [pathname, setStatus]);
 
   useEffect(() => {
     // only ask members with a usable profile (searchable)
+    // re-checked on every in-app navigation too; the endpoint is read-only
     if (profileLoaded && isSearchable) loadNextFeedback();
-  }, [profileLoaded, isSearchable]);
+  }, [profileLoaded, isSearchable, pathname]);
 
   useEffect(() => {
     function onClick(e) {
@@ -78,6 +116,65 @@ export default function AppShell({ children }) {
 
   const name = me?.user?.full_name || "";
   const memberNo = me?.user?.member_number;
+
+  // App-wide comms banners share one slot. Priority order:
+  // vouch-back (vouch for your inviter) > vouches (no one has vouched for
+  // you) > connection feedback > traction.
+  // The first eligible, non-dismissed one shows; dismissing falls through to
+  // the next. Nothing renders until everything it depends on has loaded.
+  const slotReady = profileLoaded && (fbLoaded || !isSearchable);
+  const vouchBackFirst = (vouchBack?.full_name || "them").split(" ")[0];
+  const banners = [
+    {
+      // invited members who haven't vouched for their inviter yet. Highest:
+      // a one-tap action that grows trust for someone they already know.
+      id: "vouch-back",
+      show: isSearchable && !!vouchBack?.member_number,
+      props: {
+        type: "important",
+        icon: Handshake,
+        message: `${vouchBack?.full_name} invited you to Kuzana Connect. Vouch for them so other members know they can trust them. It takes a minute.`,
+        ctaLabel: `Vouch for ${vouchBackFirst}`,
+        ctaHref: `/members/${slugify(vouchBack?.full_name || "")}-${vouchBack?.member_number}#vouches`,
+      },
+    },
+    {
+      id: "get-vouched",
+      show: isSearchable && vouchCount === 0 && myNumber != null,
+      props: {
+        type: "important",
+        icon: Handshake,
+        message:
+          "You don't have any vouches yet. On Kuzana Connect, vouches are how members decide who to trust and connect with, and members with vouches stand out. Invite people who know your work so they can vouch for you.",
+        ctaLabel: "Invite people who can vouch for you",
+        ctaHref: `/members/${slugify(myName || "")}-${myNumber}#invites-section`,
+      },
+    },
+    {
+      id: "connection-feedback",
+      show: !!fbPerson,
+      props: {
+        type: "update",
+        message: `You connected with ${fbPerson?.full_name}. How did it go?`,
+        ctaLabel: "Rate this connection",
+        onCta: () => setFbOpen(true),
+      },
+    },
+    {
+      id: "add-traction",
+      show: isSearchable && !hasTraction,
+      props: {
+        type: "update",
+        message:
+          "New: add your traction, where your business is at. It gives your matches useful context.",
+        ctaLabel: "Add it",
+        ctaHref: "/profile/edit#traction",
+      },
+    },
+  ];
+  const activeBanner = slotReady
+    ? banners.find((b) => b.show && !dismissed.has(b.id))
+    : null;
 
   function goToMyProfile() {
     setOpen(false);
@@ -190,25 +287,13 @@ export default function AppShell({ children }) {
 
       {/* content */}
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {/* App-wide comms banners, one slot, prioritized:
-            feedback (a connection to rate) > traction nudge. */}
-        {fbPerson ? (
+        {/* App-wide comms banners: one prioritized slot (see `banners`). */}
+        {activeBanner && (
           <Banner
-            id="connection-feedback"
-            type="feedback"
-            show={true}
-            message={`You connected with ${fbPerson.full_name}. How did it go?`}
-            ctaLabel="Rate this connection"
-            onCta={() => setFbOpen(true)}
-          />
-        ) : (
-          <Banner
-            id="add-traction"
-            type="update"
-            show={profileLoaded && isSearchable && !hasTraction}
-            message="New: add your traction, where your business is at. It gives your matches useful context."
-            ctaLabel="Add it"
-            ctaHref="/profile/edit#traction"
+            key={activeBanner.id}
+            id={activeBanner.id}
+            {...activeBanner.props}
+            onDismiss={() => markDismissed(activeBanner.id)}
           />
         )}
 
@@ -216,12 +301,12 @@ export default function AppShell({ children }) {
           <ConnectionFeedbackModal
             key={fbPerson.user_id}
             person={fbPerson}
-            onDone={async () => {
-              // "rate another": fetch the next target. If one exists, the modal
-              // remounts for them (key change resets its steps); else it closes.
-              const r = await getNextFeedback().catch(() => null);
-              if (r?.pending && r.person) {
-                setFbPerson(r.person);
+            onDone={(next) => {
+              // "rate the next person": the submit response already named
+              // them, so the modal remounts for them (key change resets its
+              // steps); with no next person it closes.
+              if (next) {
+                setFbPerson(next);
               } else {
                 setFbPerson(null);
                 setFbOpen(false);
