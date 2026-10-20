@@ -308,7 +308,7 @@ function InvitesSection({ userId = null, readOnly = false }, ref) {
               </div>
 
               {/* vouch (readable, its own space) */}
-              <p className="px-4 pb-3.5 pt-2 text-sm leading-relaxed text-slate-600">
+              <p className="whitespace-pre-line break-words px-4 pb-3.5 pt-2 text-sm leading-relaxed text-slate-600">
                 {inv.remarks}
               </p>
 

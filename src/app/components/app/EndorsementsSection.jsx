@@ -335,6 +335,8 @@ export default function EndorsementsSection({
 
 // One endorsement's content: relationship, remarks, year, and optionally the
 // linked person (endorser or endorsed depending on the toggle).
+const LONG_REMARKS = 200;
+
 function VouchRow({ row, showPerson, onPersonClick }) {
   // Testimonial format: the vouch message leads, then a compact meta line
   // (relationship + period, structured, not a built sentence so it never reads
@@ -342,10 +344,29 @@ function VouchRow({ row, showPerson, onPersonClick }) {
   // bottom (avatar + name + title). This keeps the relationship clearly ABOUT
   // the connection, not mistaken for the endorser's own role.
   const period = engagementPeriod(row.engaged_from, row.engaged_to);
+  // long vouches (up to 400 chars) clamp to 5 lines with a toggle, so the
+  // grid stays tidy
+  const [expanded, setExpanded] = useState(false);
+  const long = (row.remarks || "").length > LONG_REMARKS;
   return (
     <div className="flex h-full flex-col">
       {/* message leads */}
-      <p className="text-sm leading-relaxed text-brand-navy">“{row.remarks}”</p>
+      <p
+        className={
+          "whitespace-pre-line break-words text-sm leading-relaxed text-brand-navy" +
+          (long && !expanded ? " line-clamp-5" : "")
+        }
+      >
+        “{row.remarks}”
+      </p>
+      {long && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 self-start text-xs font-medium text-brand-blue hover:text-brand-blue-600"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
 
       {/* relationship · period — structured meta, clearly about the relationship */}
       <div className="mt-2 text-[11px] text-slate-400">

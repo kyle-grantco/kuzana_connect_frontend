@@ -19,7 +19,7 @@ export const RELATIONSHIP_OPTIONS = [
 
 export const LIMITS = {
   relationship: 40,
-  remarks: 140,
+  remarks: 400,
   name: 120,
 };
 
