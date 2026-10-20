@@ -66,6 +66,7 @@ export default function AppLayout({ children }) {
           hasTraction: !!(p?.traction && String(p.traction).trim()),
           vouchCount: me?.vouch_count ?? null,
           vouchBack: me?.vouch_back ?? null,
+          invitedRecently: !!me?.invited_recently,
         });
       } catch {
         setStatus({ isSearchable: false, completionStatus: "pending" });

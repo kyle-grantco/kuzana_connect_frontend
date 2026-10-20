@@ -38,6 +38,7 @@ import {
 } from "@/app/lib/inviteService";
 import { LIMITS } from "@/app/lib/vouch";
 import { useNotificationStore } from "@/app/store/notificationStore";
+import { useProfileStatus } from "@/app/store/profileStatusStore";
 import ConfirmModal from "@/app/components/ui/ConfirmModal";
 import VouchForm from "@/app/components/app/VouchForm";
 import { engagementPeriod } from "@/app/lib/vouch";
@@ -133,6 +134,8 @@ function InvitesSection({ userId = null, readOnly = false }, ref) {
         ...values,
       });
       setCreated(res); // { id, token, invitee_name, status }
+      // they did what the get-vouched banner asks: snooze it right away
+      useProfileStatus.getState().setStatus({ invitedRecently: true });
       setFormOpen(false);
       await load(1);
     } catch (err) {

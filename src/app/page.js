@@ -157,7 +157,7 @@ export default function LandingPage() {
                 Already in the Kuzana community? Join Connect
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Use the access code from the WhatsApp group. Already on Connect?{" "}
+                Use the access code from the WhatsApp group. Already a member?{" "}
                 <Link
                   href="/auth/login"
                   className="font-semibold text-brand-blue hover:underline"

@@ -53,6 +53,7 @@ export default function AppShell({ children }) {
   const myNumber = useProfileStatus((s) => s.memberNumber);
   const myName = useProfileStatus((s) => s.fullName);
   const vouchBack = useProfileStatus((s) => s.vouchBack);
+  const invitedRecently = useProfileStatus((s) => s.invitedRecently);
   const setStatus = useProfileStatus((s) => s.setStatus);
 
   // in-app connection feedback: the next connection to ask about (or null),
@@ -94,6 +95,7 @@ export default function AppShell({ children }) {
           hasTraction: !!(p?.traction && String(p.traction).trim()),
           vouchCount: m?.vouch_count ?? null,
           vouchBack: m?.vouch_back ?? null,
+          invitedRecently: !!m?.invited_recently,
         });
       })
       .catch(() => {});
@@ -133,19 +135,21 @@ export default function AppShell({ children }) {
       props: {
         type: "important",
         icon: Handshake,
-        message: `${vouchBack?.full_name} invited you to Kuzana Connect. Vouch for them so other members know they can trust them. It takes a minute.`,
+        message: `${vouchBack?.full_name} invited you to the network. Vouch for them so other members know they can trust them. It takes a minute.`,
         ctaLabel: `Vouch for ${vouchBackFirst}`,
         ctaHref: `/members/${slugify(vouchBack?.full_name || "")}-${vouchBack?.member_number}#vouches`,
       },
     },
     {
       id: "get-vouched",
-      show: isSearchable && vouchCount === 0 && myNumber != null,
+      // snoozed for 7 days after they invite someone (the action it asks for)
+      show:
+        isSearchable && vouchCount === 0 && myNumber != null && !invitedRecently,
       props: {
         type: "important",
         icon: Handshake,
         message:
-          "You don't have any vouches yet. On Kuzana Connect, vouches are how members decide who to trust and connect with, and members with vouches stand out. Invite people who know your work so they can vouch for you.",
+          "You don't have any vouches yet. Vouches are how you're trusted in the network, and members with vouches stand out. Invite people who know your work so they can vouch for you.",
         ctaLabel: "Invite people who can vouch for you",
         ctaHref: `/members/${slugify(myName || "")}-${myNumber}#invites-section`,
       },
