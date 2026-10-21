@@ -180,9 +180,9 @@ export default function OnboardingPage() {
 
   // Step 2 validation (business substance). Blocks the MVP save.
   function validateStep2() {
-    if (form.offerings.length === 0) return "Add at least one thing you offer.";
     if (form.looking_for.length === 0)
       return "Add at least one thing you're looking for.";
+    if (form.offerings.length === 0) return "Add at least one thing you offer.";
     return "";
   }
 
@@ -343,23 +343,23 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <FieldLabel hint="What you do, or what you can help other members with. e.g. helping founders land their first customers, building websites for small businesses">
-              What can you offer or help with?
-            </FieldLabel>
-            <ChipInput
-              value={form.offerings}
-              onChange={(v) => set("offerings", v)}
-              placeholder="Add one, then press +"
-            />
-          </div>
-
-          <div>
             <FieldLabel hint="What you need or want help with. e.g. distribution partners, a technical co-founder, marketing support">
               What are you looking for?
             </FieldLabel>
             <ChipInput
               value={form.looking_for}
               onChange={(v) => set("looking_for", v)}
+              placeholder="Add one, then press +"
+            />
+          </div>
+
+          <div>
+            <FieldLabel hint="What you do, or what you can help other members with. e.g. helping founders land their first customers, building websites for small businesses">
+              What can you offer or help with?
+            </FieldLabel>
+            <ChipInput
+              value={form.offerings}
+              onChange={(v) => set("offerings", v)}
               placeholder="Add one, then press +"
             />
           </div>

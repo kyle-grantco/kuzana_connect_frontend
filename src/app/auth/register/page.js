@@ -27,7 +27,8 @@ function RegisterInner() {
   const { notify } = useNotificationStore();
 
   const [inviteToken, setInviteToken] = useState(undefined); // undefined = resolving
-  const [communityCode, setCommunityCode] = useState("");
+  // Finale event prefill — revert after the event
+  const [communityCode, setCommunityCode] = useState("finale");
   const [form, setForm] = useState({
     full_name: "",
     whatsapp_number: "",
