@@ -234,6 +234,7 @@ export default function AdminMembersPage() {
                   <th className="px-4 py-2.5">Status</th>
                   <th className="px-4 py-2.5">Profile</th>
                   <th className="px-4 py-2.5">Sent</th>
+                  <th className="px-4 py-2.5">Sent/wk</th>
                   <th className="px-4 py-2.5">Received</th>
                   <th className="px-4 py-2.5">Connections</th>
                   <th className="px-4 py-2.5">Invites</th>
@@ -293,6 +294,13 @@ export default function AdminMembersPage() {
                             ({u.sent_accepted} acc)
                           </span>
                         </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {u.sent ? (
+                        <span className="text-slate-600">{u.sent_per_week}</span>
                       ) : (
                         <span className="text-slate-300">—</span>
                       )}
