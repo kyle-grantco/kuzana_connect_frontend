@@ -26,6 +26,15 @@ const STATUS_TABS = ["all", "active", "pending", "suspended", "deleted"];
 const SPECIAL_TABS = ["inviters", "connected", "initiators", "targeted"];
 const FILTER_TABS = [...STATUS_TABS, ...SPECIAL_TABS];
 const SIZE_OPTIONS = [20, 50, 100];
+// Recent sent/wk window, in the same Mon–Mon (UTC) weeks as the request
+// quota. N = the current week + the N-1 weeks before it; 0 = all time.
+const RECENT_OPTIONS = [
+  { value: 1, label: "This wk" },
+  { value: 2, label: "Last 2 wk" },
+  { value: 3, label: "Last 3 wk" },
+  { value: 4, label: "Last 4 wk" },
+  { value: 0, label: "All time" },
+];
 
 // Joined column: always shown in EAT, whatever the admin's browser timezone.
 // "10 Oct 2025" over "11:40:23".
@@ -64,6 +73,16 @@ export default function AdminMembersPage() {
   // one special (non-status) filter at a time: "" | inviters | connected |
   // initiators | targeted. Status tabs clear it; selecting one clears status.
   const [special, setSpecial] = useState("");
+  const [recentWeeks, setRecentWeeks] = useState(2);
+  // custom N typed in the header; only applied on Enter / blur
+  const [customWeeks, setCustomWeeks] = useState("");
+  const [showCustom, setShowCustom] = useState(false);
+
+  function applyCustomWeeks() {
+    const n = parseInt(customWeeks, 10);
+    if (n >= 1 && n <= 52) setRecentWeeks(n);
+    else setCustomWeeks(String(recentWeeks));
+  }
 
   useEffect(() => {
     getMyProfile()
@@ -82,6 +101,7 @@ export default function AdminMembersPage() {
           connectors_only: special === "connected" || undefined,
           initiators_only: special === "initiators" || undefined,
           targeted_only: special === "targeted" || undefined,
+          recent_weeks: recentWeeks,
           page: toPage,
           size,
         });
@@ -95,12 +115,12 @@ export default function AdminMembersPage() {
         setLoading(false);
       }
     },
-    [status, q, size, page, special],
+    [status, q, size, page, special, recentWeeks],
   );
 
   useEffect(() => {
     load(1);
-  }, [status, size, special]); // eslint-disable-line
+  }, [status, size, special, recentWeeks]); // eslint-disable-line
 
   const totalPages = Math.max(1, Math.ceil(total / size));
   const from = total === 0 ? 0 : (page - 1) * size + 1;
@@ -234,7 +254,60 @@ export default function AdminMembersPage() {
                   <th className="px-4 py-2.5">Status</th>
                   <th className="px-4 py-2.5">Profile</th>
                   <th className="px-4 py-2.5">Sent</th>
-                  <th className="px-4 py-2.5">Sent/wk</th>
+                  <th className="whitespace-nowrap px-4 py-2.5">
+                    <div>Avg sent/wk</div>
+                    <div className="mt-1 flex items-center gap-1">
+                      <select
+                        value={
+                          showCustom ||
+                          !RECENT_OPTIONS.some((o) => o.value === recentWeeks)
+                            ? "custom"
+                            : recentWeeks
+                        }
+                        onChange={(e) => {
+                          if (e.target.value === "custom") {
+                            setCustomWeeks(String(recentWeeks || 5));
+                            setShowCustom(true);
+                          } else {
+                            setShowCustom(false);
+                            setRecentWeeks(Number(e.target.value));
+                          }
+                        }}
+                        title="Requests per week, current week included (Mon–Mon, same as the request limit)"
+                        className="rounded border border-slate-200 bg-white px-1 py-0.5 text-xs text-slate-600"
+                      >
+                        {RECENT_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                        <option value="custom">
+                          {!showCustom &&
+                          !RECENT_OPTIONS.some((o) => o.value === recentWeeks)
+                            ? `Last ${recentWeeks} wk`
+                            : "Custom…"}
+                        </option>
+                      </select>
+                      {showCustom && (
+                        <input
+                          type="number"
+                          min={1}
+                          max={52}
+                          autoFocus
+                          value={customWeeks}
+                          onChange={(e) => setCustomWeeks(e.target.value)}
+                          onBlur={() => {
+                            applyCustomWeeks();
+                            setShowCustom(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                          }}
+                          className="w-12 rounded border border-slate-200 px-1 py-0.5 text-xs text-slate-600"
+                        />
+                      )}
+                    </div>
+                  </th>
                   <th className="px-4 py-2.5">Received</th>
                   <th className="px-4 py-2.5">Connections</th>
                   <th className="px-4 py-2.5">Invites</th>
@@ -299,8 +372,18 @@ export default function AdminMembersPage() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-xs">
-                      {u.sent ? (
-                        <span className="text-slate-600">{u.sent_per_week}</span>
+                      {u.recent_sent ? (
+                        <span className="text-slate-600">
+                          {recentWeeks === 1 ? u.recent_sent : u.recent_per_week}
+                          {/* raw count in the window; redundant for this wk
+                              (it's the value) and all time (it's Sent) */}
+                          {recentWeeks > 1 && (
+                            <span className="text-slate-400">
+                              {" "}
+                              ({u.recent_sent})
+                            </span>
+                          )}
+                        </span>
                       ) : (
                         <span className="text-slate-300">—</span>
                       )}

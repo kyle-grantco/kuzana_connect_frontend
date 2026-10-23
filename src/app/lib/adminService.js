@@ -28,6 +28,7 @@ export async function listUsers({
   connectors_only,
   initiators_only,
   targeted_only,
+  recent_weeks,
   page = 1,
   size = 20,
 } = {}) {
@@ -38,6 +39,7 @@ export async function listUsers({
   if (connectors_only) params.set("connectors_only", "true");
   if (initiators_only) params.set("initiators_only", "true");
   if (targeted_only) params.set("targeted_only", "true");
+  if (recent_weeks != null) params.set("recent_weeks", recent_weeks);
   params.set("page", page);
   params.set("size", size);
   const res = await authRequest.get(`/admin/users?${params.toString()}`);
